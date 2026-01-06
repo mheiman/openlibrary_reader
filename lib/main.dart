@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
@@ -35,11 +35,13 @@ void main() async {
 
 /// Set up deep link handling for OAuth callbacks
 void _setupDeepLinkHandling(AuthNotifier authNotifier) {
+  final appLinks = AppLinks();
+  
   // Handle initial deep link if app was launched with one
-  _handleInitialUri(authNotifier);
+  _handleInitialUri(appLinks, authNotifier);
   
   // Handle deep links while app is running
-  uriLinkStream.listen((Uri? uri) {
+  appLinks.uriLinkStream.listen((Uri? uri) {
     if (uri != null) {
       _handleDeepLink(uri, authNotifier);
     }
@@ -50,9 +52,9 @@ void _setupDeepLinkHandling(AuthNotifier authNotifier) {
 }
 
 /// Handle initial URI if app was launched with a deep link
-Future<void> _handleInitialUri(AuthNotifier authNotifier) async {
+Future<void> _handleInitialUri(AppLinks appLinks, AuthNotifier authNotifier) async {
   try {
-    final initialUri = await getInitialUri();
+    final initialUri = await appLinks.getInitialLink();
     if (initialUri != null) {
       _handleDeepLink(initialUri, authNotifier);
     }

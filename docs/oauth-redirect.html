@@ -106,13 +106,14 @@
         <div id="error" class="error"></div>
         
         <div id="mobile-instructions" class="instructions" style="display: none;">
-            <h3>Mobile Users:</h3>
-            <p>If you're not automatically redirected, please:</p>
+            <h3>iOS Users:</h3>
+            <p>If you're not automatically redirected to the app, please try:</p>
             <ol>
-                <li>Close this browser tab</li>
-                <li>Return to the OpenLibrary Reader app</li>
-                <li>Your login should be complete</li>
+                <li><strong>Tap the "Open" button</strong> if it appears at the top of Safari</li>
+                <li><strong>Long-press the manual button</strong> below and select "Open in App"</li>
+                <li>If still not working, close this tab and reopen the app - your login may already be complete</li>
             </ol>
+            <p><strong>Note:</strong> Universal Links require the app to be installed and not force-quit.</p>
         </div>
         
         <div id="desktop-instructions" class="instructions" style="display: none;">
@@ -157,21 +158,38 @@
             document.getElementById('message').textContent = 
                 'Please try the authentication process again.';
         } else {
-            // Try to detect if we're on a mobile device
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            // Enhanced mobile detection with better iOS detection
+            const userAgent = navigator.userAgent;
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+            
+            // Additional check for iOS standalone mode (PWA)
+            const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+            const isStandalone = window.navigator.standalone || false;
+            
+            console.log('📱 Device Info:', {
+              userAgent: userAgent,
+              isMobile: isMobile,
+              isIOS: isIOS,
+              isStandalone: isStandalone
+            });
 
             if (isMobile) {
                 // For mobile devices, try to open the app using Universal Links / App Links
                 setTimeout(() => {
-                    // Try to redirect to the app using the universal link
-                    window.location.href = `https://mheiman.github.io/openlibrary_reader/oauth-redirect.html?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+                    // First, try the direct Universal Link to the app
+                    // This should work on iOS with proper AASA configuration
+                    window.location.href = `com.openlibrary.reader://oauth2/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
                     
-                    // If that doesn't work after a delay, show mobile instructions
+                    // Universal Links require a timeout - iOS will handle the redirect
+                    // If it doesn't work, we'll show instructions after a delay
                     setTimeout(() => {
-                        document.getElementById('status').style.display = 'none';
-                        document.getElementById('mobile-instructions').style.display = 'block';
-                        document.getElementById('manual-button').style.display = 'block';
-                    }, 2000);
+                        // Check if we're still on this page (Universal Link didn't work)
+                        if (window.location.href.includes('oauth-redirect.html')) {
+                            document.getElementById('status').style.display = 'none';
+                            document.getElementById('mobile-instructions').style.display = 'block';
+                            document.getElementById('manual-button').style.display = 'block';
+                        }
+                    }, 1500); // Shorter delay for better UX
                 }, 100);
             } else {
                 // For desktop users, show instructions

@@ -175,7 +175,32 @@
               userAgent: userAgent,
               isMobile: isMobile,
               isIOS: isIOS,
-              isStandalone: isStandalone
+              isStandalone: isStandalone,
+              isSafari: /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgiOS/i.test(userAgent),
+              platform: navigator.platform,
+              maxTouchPoints: navigator.maxTouchPoints
+            });
+            
+            // Log the current URL parameters
+            console.log('🔗 URL Parameters:', {
+              code: code,
+              state: state,
+              fullURL: window.location.href
+            });
+            
+            // Check if we're in an iframe (some browsers open links in iframes)
+            console.log('🖼️ Frame Info:', {
+              isInIframe: window.self !== window.top,
+              parentOrigin: window.location.ancestorOrigins ? window.location.ancestorOrigins[0] : 'none'
+            });
+            
+            // Log navigator capabilities
+            console.log('🌐 Navigator Capabilities:', {
+              userAgent: navigator.userAgent,
+              platform: navigator.platform,
+              appVersion: navigator.appVersion,
+              language: navigator.language,
+              onLine: navigator.onLine
             });
 
             if (isMobile) {

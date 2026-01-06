@@ -2,7 +2,7 @@ class ApiConstants {
   // Base URLs
 //  static const String openLibraryBaseUrl = 'https://openlibrary.org';
   static const String archiveOrgBaseUrl = 'https://archive.org';
-  static const String openLibraryBaseUrl = 'http://localhost:8080';
+  static const String openLibraryBaseUrl = 'http://192.168.1.9:8080';
 
 
   // Open Library Endpoints

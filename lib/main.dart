@@ -67,17 +67,36 @@ Future<void> _handleInitialUri(AppLinks appLinks, AuthNotifier authNotifier) asy
 void _handleDeepLink(Uri uri, AuthNotifier authNotifier) {
   LoggingService.debug('🔑 [DeepLink] Received deep link: $uri');
   
-  // Check if this is an OAuth callback
+  // Check if this is an OAuth callback - support both custom scheme and universal links
+  bool isOAuthCallback = false;
+  String? code;
+  String? state;
+  
+  // Check for custom scheme format: com.openlibrary.reader://oauth2/callback?code=...&state=...
   if (uri.scheme == 'com.openlibrary.reader' && 
       uri.host == 'oauth2' && 
       uri.path == '/callback') {
-    
+    isOAuthCallback = true;
+    code = uri.queryParameters['code'];
+    state = uri.queryParameters['state'];
+  }
+  // Check for universal link format: https://olreader.page.link/oauth?code=...&state=...
+  else if (uri.host == 'olreader.page.link' && 
+           uri.path == '/oauth') {
+    isOAuthCallback = true;
+    code = uri.queryParameters['code'];
+    state = uri.queryParameters['state'];
+  }
+  // Check for direct GitHub Pages format: https://olreader.github.io/oauth-redirect.html?code=...&state=...
+  else if (uri.host == 'olreader.github.io' && 
+           uri.path == '/oauth-redirect.html') {
+    isOAuthCallback = true;
+    code = uri.queryParameters['code'];
+    state = uri.queryParameters['state'];
+  }
+  
+  if (isOAuthCallback) {
     LoggingService.debug('🔑 [DeepLink] Identified as OAuth callback');
-    
-    // Extract code and state from query parameters
-    final code = uri.queryParameters['code'];
-    final state = uri.queryParameters['state'];
-    
     LoggingService.debug('🔑 [DeepLink] Query parameters: ${uri.queryParameters}');
     
     if (code != null && state != null) {

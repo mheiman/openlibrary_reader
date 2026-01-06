@@ -60,5 +60,10 @@
 				</array>
 			</dict>
 		</array>
+		<key>com.apple.developer.associated-domains</key>
+		<array>
+			<string>applinks:olreader.page.link</string>
+			<string>applinks:olreader.github.io</string>
+		</array>
 	</dict>
 </plist>

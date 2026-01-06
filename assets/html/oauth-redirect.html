@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenLibrary Reader - OAuth Redirect</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2B6CB0;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(43, 108, 176, 0.3);
+            border-radius: 50%;
+            border-top-color: #2B6CB0;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .button {
+            background-color: #2B6CB0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #1A5696;
+        }
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .error {
+            color: #E53E3E;
+            margin-top: 20px;
+        }
+        .instructions {
+            background-color: #f0f7ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .instructions ol {
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="#2B6CB0">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+        </div>
+        <h1>Authentication Complete</h1>
+        <div id="status">
+            <span class="loading"></span>
+            <span id="status-text">Redirecting to OpenLibrary Reader...</span>
+        </div>
+        <p id="message">Please wait while we complete your login.</p>
+        <div id="error" class="error"></div>
+        
+        <div id="mobile-instructions" class="instructions" style="display: none;">
+            <h3>Mobile Users:</h3>
+            <p>If you're not automatically redirected, please:</p>
+            <ol>
+                <li>Close this browser tab</li>
+                <li>Return to the OpenLibrary Reader app</li>
+                <li>Your login should be complete</li>
+            </ol>
+        </div>
+        
+        <div id="desktop-instructions" class="instructions" style="display: none;">
+            <h3>Desktop Users:</h3>
+            <p>Since you're on a desktop browser:</p>
+            <ol>
+                <li>Copy this code: <strong id="auth-code"></strong></li>
+                <li>Return to the OpenLibrary Reader app</li>
+                <li>Paste the code in the app to complete login</li>
+            </ol>
+        </div>
+        
+        <button id="manual-button" class="button" style="display: none;">
+            Complete Login Manually
+        </button>
+    </div>
+
+    <script>
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+
+        // Display the auth code for desktop users
+        if (code) {
+            document.getElementById('auth-code').textContent = code;
+        }
+
+        // Check for errors
+        if (error) {
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('error').textContent = 
+                `Error: ${error}${errorDescription ? ' - ' + errorDescription : ''}`;
+            document.getElementById('message').textContent = 
+                'There was an issue with the authentication process.';
+        } else if (!code || !state) {
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('error').textContent = 
+                'Invalid OAuth callback - missing required parameters.';
+            document.getElementById('message').textContent = 
+                'Please try the authentication process again.';
+        } else {
+            // Try to detect if we're on a mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                // For mobile devices, try to open the app using Universal Links / App Links
+                setTimeout(() => {
+                    // Try to redirect to the app using the universal link
+                    window.location.href = `https://olreader.page.link/oauth?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+                    
+                    // If that doesn't work after a delay, show mobile instructions
+                    setTimeout(() => {
+                        document.getElementById('status').style.display = 'none';
+                        document.getElementById('mobile-instructions').style.display = 'block';
+                        document.getElementById('manual-button').style.display = 'block';
+                    }, 2000);
+                }, 100);
+            } else {
+                // For desktop users, show instructions
+                setTimeout(() => {
+                    document.getElementById('status').style.display = 'none';
+                    document.getElementById('desktop-instructions').style.display = 'block';
+                    document.getElementById('manual-button').style.display = 'block';
+                }, 2000);
+            }
+        }
+
+        // Manual button handler
+        document.getElementById('manual-button').addEventListener('click', () => {
+            if (code && state) {
+                // Try to open the app with the code
+                window.location.href = `com.openlibrary.reader://oauth2/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+            }
+        });
+    </script>
+</body>
+</html>

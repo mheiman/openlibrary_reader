@@ -89,6 +89,11 @@
             margin-bottom: 8px;
         }
     </style>
+    <!-- iOS Universal Links Meta Tag -->
+    <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID, app-argument=https://mheiman.github.io/openlibrary_reader/oauth-redirect.html?code=PLACEHOLDER&state=PLACEHOLDER">
+    <!-- Smart App Banner for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
     <div class="container">
@@ -175,22 +180,25 @@
 
             if (isMobile) {
                 // For mobile devices, try to open the app using Universal Links / App Links
+                // Try immediately - no delay needed
+                window.location.href = `com.openlibrary.reader://oauth2/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+                
+                // Set up a fallback timer in case Universal Links don't work
+                const fallbackTimer = setTimeout(() => {
+                    // Check if we're still on this page (Universal Link didn't work)
+                    if (window.location.href.includes('oauth-redirect.html')) {
+                        document.getElementById('status').style.display = 'none';
+                        document.getElementById('mobile-instructions').style.display = 'block';
+                        document.getElementById('manual-button').style.display = 'block';
+                    }
+                }, 800); // Faster fallback
+                
+                // Also try a secondary method using window.location.replace
                 setTimeout(() => {
-                    // First, try the direct Universal Link to the app
-                    // This should work on iOS with proper AASA configuration
-                    window.location.href = `com.openlibrary.reader://oauth2/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
-                    
-                    // Universal Links require a timeout - iOS will handle the redirect
-                    // If it doesn't work, we'll show instructions after a delay
-                    setTimeout(() => {
-                        // Check if we're still on this page (Universal Link didn't work)
-                        if (window.location.href.includes('oauth-redirect.html')) {
-                            document.getElementById('status').style.display = 'none';
-                            document.getElementById('mobile-instructions').style.display = 'block';
-                            document.getElementById('manual-button').style.display = 'block';
-                        }
-                    }, 1500); // Shorter delay for better UX
-                }, 100);
+                    if (window.location.href.includes('oauth-redirect.html')) {
+                        window.location.replace(`com.openlibrary.reader://oauth2/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
+                    }
+                }, 200);
             } else {
                 // For desktop users, show instructions
                 setTimeout(() => {

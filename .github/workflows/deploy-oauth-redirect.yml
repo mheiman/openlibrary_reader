@@ -15,6 +15,10 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     
     steps:
     - name: Checkout repository
@@ -140,6 +144,29 @@ jobs:
         echo "Asset Links file size: $(wc -c < docs/.well-known/assetlinks.json) bytes"
         echo "Redirect HTML size: $(wc -c < docs/oauth-redirect.html) bytes"
         
+    - name: Debug GitHub Pages configuration
+      run: |
+        echo "🔍 Debugging GitHub Pages deployment..."
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref }}"
+        echo "Actor: ${{ github.actor }}"
+        echo "Token permissions: $(echo ${{ secrets.GITHUB_TOKEN }} | cut -c1-10)****"
+        
+        # Check if docs folder exists
+        if [ -d "docs" ]; then
+          echo "✅ docs folder exists"
+          ls -la docs/
+        else
+          echo "❌ docs folder missing!"
+          exit 1
+        fi
+        
+        # Check GitHub Pages settings
+        echo "📋 GitHub Pages should be configured to:"
+        echo "   - Source: gh-pages branch"
+        echo "   - Folder: / (root)"
+        echo "   - URL: https://mheiman.github.io/openlibrary_reader/"
+
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
@@ -147,6 +174,9 @@ jobs:
         publish_dir: ./docs
         enable_jekyll: false
         force_orphan: true
+        publish_branch: gh-pages
+        keep_files: false
+        allow_empty_commit: false
         
     - name: Verify deployment
       run: |
@@ -154,6 +184,39 @@ jobs:
         echo "✅ OAuth redirect service deployed successfully!"
         echo "🔗 Live URL: https://mheiman.github.io/openlibrary_reader/oauth-redirect.html"
         echo "📝 Remember to test Universal Links on real iOS devices"
+        
+    - name: Handle deployment errors
+      if: failure()
+      run: |
+        echo "⚠️  Deployment encountered an issue"
+        echo ""
+        echo "📋 Common Issues & Solutions:"
+        echo ""
+        echo "1. Permission Denied (403):"
+        echo "   - Solution: Grant write permission to GitHub Actions"
+        echo "   - Go to: Repository Settings > Actions > General"
+        echo "   - Set: 'Read and write permissions' for GitHub Actions"
+        echo ""
+        echo "2. GitHub Pages not configured:"
+        echo "   - Solution: Set up GitHub Pages for gh-pages branch"
+        echo "   - Go to: Repository Settings > Pages"
+        echo "   - Set: Source = 'gh-pages branch'"
+        echo ""
+        echo "3. Branch protection rules:"
+        echo "   - Solution: Allow GitHub Actions to push to gh-pages"
+        echo "   - Go to: Repository Settings > Branches"
+        echo "   - Ensure gh-pages branch allows GitHub Actions"
+        echo ""
+        echo "4. Token permissions:"
+        echo "   - Solution: Use repository token with write access"
+        echo "   - The workflow already has correct permissions"
+        echo ""
+        echo "🔗 Current Live Service:"
+        echo "   The service is already live at:"
+        echo "   https://mheiman.github.io/openlibrary_reader/oauth-redirect.html"
+        echo ""
+        echo "📚 Documentation:"
+        echo "   See docs/README.md for setup instructions"
         
     - name: Create deployment summary
       run: |

@@ -29,7 +29,7 @@ class ApiConstants {
   
   // OAuth2 Configuration
   static const String oauthClientId = 'mobile_app';
-  static const String oauthRedirectUri = 'https://olreader.github.io/oauth-redirect.html';
+  static const String oauthRedirectUri = 'https://olreader.github.io/docs/oauth-redirect.html';
   static const String oauthScope = 'openid profile email';
   
   // OAuth2 Debug/Testing Configuration

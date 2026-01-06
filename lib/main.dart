@@ -87,9 +87,9 @@ void _handleDeepLink(Uri uri, AuthNotifier authNotifier) {
     code = uri.queryParameters['code'];
     state = uri.queryParameters['state'];
   }
-  // Check for direct GitHub Pages format: https://olreader.github.io/docs/oauth-redirect.html?code=...&state=...
-  else if (uri.host == 'olreader.github.io' && 
-           uri.path == '/docs/oauth-redirect.html') {
+  // Check for direct GitHub Pages format: https://mheiman.github.io/openlibrary_reader/oauth-redirect.html?code=...&state=...
+  else if (uri.host == 'mheiman.github.io' && 
+           uri.path == '/openlibrary_reader/oauth-redirect.html') {
     isOAuthCallback = true;
     code = uri.queryParameters['code'];
     state = uri.queryParameters['state'];

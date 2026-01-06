@@ -3,8 +3,8 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAM_ID.com.openlibrary.reader",
-        "paths": ["/oauth", "/oauth-redirect.html"]
+        "appID": "TEAM_ID_PLACEHOLDER.com.openlibrary.reader",
+        "paths": ["/openlibrary_reader/oauth-redirect.html"]
       }
     ]
   }

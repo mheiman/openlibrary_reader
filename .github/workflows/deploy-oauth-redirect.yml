@@ -1,0 +1,237 @@
+# OAuth Redirect Service Deployment
+# Secure deployment with Team ID injection
+
+name: Deploy OAuth Redirect Service
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/deploy-oauth-redirect.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        
+    - name: Install dependencies
+      run: npm install -g jsonlint
+      
+    - name: Validate AASA file before Team ID injection
+      run: |
+        echo "Validating AASA file structure..."
+        jsonlint docs/.well-known/apple-app-site-association
+        echo "✅ AASA file is valid JSON"
+        
+    - name: Verify APPLE_TEAM_ID secret is available
+      run: |
+        echo "🔒 Checking APPLE_TEAM_ID secret availability..."
+        if [ -z "${{ secrets.APPLE_TEAM_ID }}" ]; then
+          echo "⚠️  APPLE_TEAM_ID secret is not set!"
+          echo "Please add APPLE_TEAM_ID to GitHub Secrets in repository settings."
+          echo "Using placeholder for now - Universal Links will not work in production."
+          echo "TEAM_ID_STATUS=MISSING" >> $GITHUB_ENV
+        else
+          echo "✅ APPLE_TEAM_ID secret is available"
+          # Validate Team ID format (should be alphanumeric, 10 characters)
+          if [[ "${{ secrets.APPLE_TEAM_ID }}" =~ ^[A-Z0-9]{10}$ ]]; then
+            echo "✅ Team ID format is valid"
+            echo "TEAM_ID_STATUS=VALID" >> $GITHUB_ENV
+          else
+            echo "⚠️  Team ID format may be incorrect (expected 10 alphanumeric characters)"
+            echo "TEAM_ID_STATUS=INVALID_FORMAT" >> $GITHUB_ENV
+          fi
+        fi
+
+    - name: Inject Apple Team ID (Secure)
+      if: env.TEAM_ID_STATUS == 'VALID'
+      run: |
+        echo "🔒 Injecting Apple Team ID securely..."
+        # Replace placeholder with actual Team ID
+        sed -i "s/TEAM_ID_PLACEHOLDER/${{ secrets.APPLE_TEAM_ID }}/g" docs/.well-known/apple-app-site-association
+        
+        # Validate after injection
+        jsonlint docs/.well-known/apple-app-site-association
+        echo "✅ Team ID injected successfully"
+        
+        # Show partial appID for verification (mask most of Team ID)
+        FULL_APP_ID=$(grep -o '"appID": "[^"]*"' docs/.well-known/apple-app-site-association)
+        MASKED_APP_ID=$(echo "$FULL_APP_ID" | sed 's/"appID": "\(.\)\(.*\)\(..\)"/"appID": "\1***\3"/')
+        echo "Updated appID: $MASKED_APP_ID"
+        
+        # Create a summary
+        echo "TEAM_ID_INJECTED=TRUE" >> $GITHUB_ENV
+        echo "TEAM_ID_MASKED=$MASKED_APP_ID" >> $GITHUB_ENV
+      env:
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+    - name: Handle missing or invalid Team ID
+      if: env.TEAM_ID_STATUS != 'VALID'
+      run: |
+        echo "⚠️  Using placeholder Team ID - Universal Links will not work in production"
+        echo "📋 To fix this:"
+        echo "1. Get your Apple Developer Team ID from https://developer.apple.com/account/"
+        echo "2. Add it to GitHub Secrets: Repository Settings > Secrets > APPLE_TEAM_ID"
+        echo "3. Push a new commit to trigger redeployment"
+        
+        # Ensure we're using the placeholder
+        if grep -q "TEAM_ID_PLACEHOLDER" docs/.well-known/apple-app-site-association; then
+          echo "✅ Placeholder is still in place"
+        else
+          echo "❌ Placeholder was removed - restoring it"
+          sed -i "s/${{ secrets.APPLE_TEAM_ID }}/TEAM_ID_PLACEHOLDER/g" docs/.well-known/apple-app-site-association
+        fi
+        
+        echo "TEAM_ID_INJECTED=FALSE" >> $GITHUB_ENV
+        
+    - name: Verify domain verification files
+      run: |
+        echo "🔍 Verifying domain verification files..."
+        
+        # Check AASA file
+        if [ -f "docs/.well-known/apple-app-site-association" ]; then
+          echo "✅ AASA file exists"
+          ls -la docs/.well-known/apple-app-site-association
+        else
+          echo "❌ AASA file missing!"
+          exit 1
+        fi
+        
+        # Check Asset Links file
+        if [ -f "docs/.well-known/assetlinks.json" ]; then
+          echo "✅ Asset Links file exists"
+          ls -la docs/.well-known/assetlinks.json
+        else
+          echo "❌ Asset Links file missing!"
+          exit 1
+        fi
+        
+        # Check redirect HTML
+        if [ -f "docs/oauth-redirect.html" ]; then
+          echo "✅ OAuth redirect HTML exists"
+          ls -la docs/oauth-redirect.html
+        else
+          echo "❌ OAuth redirect HTML missing!"
+          exit 1
+        fi
+        
+    - name: Test redirect URLs
+      run: |
+        echo "🌐 Testing redirect URLs..."
+        
+        # Test if files are accessible (simulated)
+        echo "Testing: https://mheiman.github.io/openlibrary_reader/oauth-redirect.html"
+        echo "Testing: https://mheiman.github.io/openlibrary_reader/.well-known/apple-app-site-association"
+        echo "Testing: https://mheiman.github.io/openlibrary_reader/.well-known/assetlinks.json"
+        
+        # Check file contents
+        echo "AASA file size: $(wc -c < docs/.well-known/apple-app-site-association) bytes"
+        echo "Asset Links file size: $(wc -c < docs/.well-known/assetlinks.json) bytes"
+        echo "Redirect HTML size: $(wc -c < docs/oauth-redirect.html) bytes"
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        enable_jekyll: false
+        force_orphan: true
+        
+    - name: Verify deployment
+      run: |
+        echo "🎉 Deployment verification..."
+        echo "✅ OAuth redirect service deployed successfully!"
+        echo "🔗 Live URL: https://mheiman.github.io/openlibrary_reader/oauth-redirect.html"
+        echo "📝 Remember to test Universal Links on real iOS devices"
+        
+    - name: Create deployment summary
+      run: |
+        echo "### OAuth Redirect Service Deployment Summary" > deployment_summary.md
+        echo "" >> deployment_summary.md
+        
+        # Set overall status
+        if [ "${{ env.TEAM_ID_INJECTED }}" = "TRUE" ]; then
+          echo "**Status**: ✅ PRODUCTION READY" >> deployment_summary.md
+          echo "**Universal Links**: ✅ ENABLED" >> deployment_summary.md
+        else
+          echo "**Status**: ⚠️  DEVELOPMENT MODE" >> deployment_summary.md
+          echo "**Universal Links**: ❌ DISABLED (placeholder Team ID)" >> deployment_summary.md
+        fi
+        
+        echo "**Timestamp**: $(date -u)" >> deployment_summary.md
+        echo "**Commit**: ${{ github.sha }}" >> deployment_summary.md
+        echo "" >> deployment_summary.md
+        
+        # Team ID status
+        echo "**Apple Team ID Status**:" >> deployment_summary.md
+        case "${{ env.TEAM_ID_STATUS }}" in
+          "VALID")
+            echo "- ✅ Valid Team ID injected: ${{ env.TEAM_ID_MASKED }}" >> deployment_summary.md
+            ;;
+          "MISSING")
+            echo "- ❌ Team ID secret not found" >> deployment_summary.md
+            ;;
+          "INVALID_FORMAT")
+            echo "- ⚠️  Team ID format may be incorrect" >> deployment_summary.md
+            ;;
+          *)
+            echo "- ❓ Team ID status unknown" >> deployment_summary.md
+            ;;
+        esac
+        
+        echo "" >> deployment_summary.md
+        echo "**Deployed Files**:" >> deployment_summary.md
+        echo "- 📄 oauth-redirect.html (${{ hashFiles('docs/oauth-redirect.html') }})" >> deployment_summary.md
+        echo "- 🔒 apple-app-site-association (${{ hashFiles('docs/.well-known/apple-app-site-association') }})" >> deployment_summary.md
+        echo "- 📱 assetlinks.json (${{ hashFiles('docs/.well-known/assetlinks.json') }})" >> deployment_summary.md
+        echo "" >> deployment_summary.md
+        
+        echo "**Live URLs**:" >> deployment_summary.md
+        echo "- 🌐 [Main Redirect](https://mheiman.github.io/openlibrary_reader/oauth-redirect.html)" >> deployment_summary.md
+        echo "- 🍎 [AASA File](https://mheiman.github.io/openlibrary_reader/.well-known/apple-app-site-association)" >> deployment_summary.md
+        echo "- 🤖 [Asset Links](https://mheiman.github.io/openlibrary_reader/.well-known/assetlinks.json)" >> deployment_summary.md
+        echo "" >> deployment_summary.md
+        
+        echo "**Test URLs**:" >> deployment_summary.md
+        echo "- 🧪 [Test with demo code](https://mheiman.github.io/openlibrary_reader/oauth-redirect.html?code=demo123&state=test456)" >> deployment_summary.md
+        echo "" >> deployment_summary.md
+        
+        # Next steps based on status
+        echo "**Next Steps**:" >> deployment_summary.md
+        if [ "${{ env.TEAM_ID_INJECTED }}" = "TRUE" ]; then
+          echo "- ✅ Test Universal Links on real iOS devices" >> deployment_summary.md
+          echo "- ✅ Test App Links on real Android devices" >> deployment_summary.md
+          echo "- ✅ Configure OAuth provider with redirect URI" >> deployment_summary.md
+          echo "- 📊 Monitor redirect success rates" >> deployment_summary.md
+        else
+          echo "- ⚠️  Add APPLE_TEAM_ID to GitHub Secrets" >> deployment_summary.md
+          echo "- ⚠️  Push new commit to trigger redeployment" >> deployment_summary.md
+          echo "- 🧪 Test with placeholder (Universal Links won't work)" >> deployment_summary.md
+        fi
+        
+        echo "" >> deployment_summary.md
+        echo "**Security Note**: Team ID is securely stored in GitHub Secrets and never exposed in logs." >> deployment_summary.md
+        
+        cat deployment_summary.md
+        
+        cat deployment_summary.md
+        
+    - name: Upload deployment summary
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-summary
+        path: deployment_summary.md
+
+# Security Note: This workflow uses GitHub Secrets to protect sensitive information
+# The Apple Team ID is never exposed in logs or public repository

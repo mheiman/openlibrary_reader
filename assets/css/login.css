@@ -1,0 +1,63 @@
+* {
+  visibility: hidden;
+  margin:0; padding:0;
+}
+#test-body-mobile>div {
+    display: none;
+}
+#test-body-mobile div#contentHead, #test-body-mobile div#contentBody {
+    display: block;
+}
+#test-body-mobile *, main#maincontent * {
+  visibility: visible;
+ }
+#test-body-mobile, main#maincontent {
+  visibility: visible;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0 10px;
+  border: none;
+}
+body {
+background-color: white;
+}
+
+.login-big-or {
+  margin-bottom: 10px;
+}
+a[href="https://archive.org"], a[href="https://archive.org/"]{
+  text-decoration: none;
+  color: unset;
+  pointer-events: none;
+}
+form.login div.formElement:has(input#remember), form.login div.label:has(label[for=username]), form.login div.label:has(label[for=password]) {
+  display: none;
+}
+.olform input[type=email], .olform input[type=password] {
+    width: 100%;
+    font-size: 20px;
+    padding: 8px;
+}
+.olform input[type=email] {
+    margin: 20px 0 10px 0;
+}
+
+div#test-body-mobile.offline {
+    font-family:system-ui;
+    font-size: 1.2em;
+    padding:20px 30px
+}
+div.offline h1 {
+    margin-bottom: 10px;
+}
+div.offline a {
+    display: inline-block;
+    margin-top: 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    padding: 6px 8px;
+    background-color: #0376b8;
+    color: white;
+    font-weight: 600;
+}

@@ -1,0 +1,15 @@
+#topnav {display: none; }
+ body {background: black !important; color: #7b7b7b}
+.BookReaderPlaceholder {background: black; color: #aaa;}
+.BookReaderMessage { background: #666;}
+.icon-fullscreen  { display: none; }
+.print-disability-link { display: none;}
+.iconochive-info { display: none;}
+#donate_banner { display: none !important;}
+#theatre-ia-wrap ~ div { display: none !important;}
+
+.br-mode-2up__leafs--right {-webkit-mask-image: -webkit-linear-gradient(0deg, rgba(0,0,0,0.9), rgba(0,0,0,0.45));}
+.br-mode-2up__leafs--left {-webkit-mask-image: -webkit-linear-gradient(180deg, rgba(0,0,0,0.9), rgba(0,0,0,0.45));}
+
+#BookReader.readerFullScreen div.BRcontainer { top: 0px !important; bottom: 0px !important;}
+#BookReader.readerFullScreen {position: absolute; height: 100% !important;}

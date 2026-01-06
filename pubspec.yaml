@@ -1,0 +1,141 @@
+name: ol_reader_clean
+description: "OpenLibrary Reader - Clean Architecture"
+publish_to: 'none'
+
+version: 2.0.0+1
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+
+  # Clean Architecture - Dependency Injection
+  get_it: ^9.2.0
+  injectable: ^2.3.2
+
+  # Clean Architecture - Data Models
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Clean Architecture - Utilities
+  dartz: ^0.10.1
+  equatable: ^2.0.5
+
+  # Network
+  dio: ^5.0.2
+  http: ^1.1.0
+
+  # Storage
+  shared_preferences: ^2.0.5
+  flutter_secure_storage: ^10.0.0
+  path_provider: ^2.0.1
+
+  # WebView
+  flutter_inappwebview: ^6.0.0
+
+  # Images
+  cached_network_image: ^3.0.0
+
+  # Navigation
+  go_router: ^17.0.1
+
+  # Utilities
+  intl: ^0.20.1
+  url_launcher: ^6.1.7
+  flutter_markdown_plus: ^1.0.7
+  uni_links: ^0.5.1
+  crypto: ^3.0.3
+  logger: ^2.0.0
+  connectivity_plus: ^5.0.0
+  quiver: ^3.0.1
+  wakelock_plus: ^1.2.8
+  package_info_plus: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Code Generation
+  build_runner: ^2.5.4
+  injectable_generator: ^2.7.0
+  freezed: ^2.5.2
+  json_serializable: ^6.7.1
+
+  # Splash Screen Generation
+  flutter_native_splash: ^2.4.3
+
+  # App Icon Generation
+  flutter_launcher_icons: ^0.14.2
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/splash/
+    - assets/js/
+    - assets/css/
+    - assets/html/
+
+  fonts:
+    - family: OLReaderIcons
+      fonts:
+        - asset: fonts/OLReaderIcons.ttf
+    - family: Roboto-Regular
+      fonts:
+        - asset: fonts/Roboto-Medium.ttf
+        - asset: fonts/Roboto-Italic.ttf
+          style: italic
+        - asset: fonts/Roboto-SemiBold.ttf
+          weight: 600
+
+# Splash screen configuration
+flutter_native_splash:
+  # Background color - matching old app (#F3EEE3)
+  color: "#F3EEE3"
+
+  # Logo image
+  image: assets/splash/splash_logo@3x.png
+
+  # Android 12+ specific configuration
+  android_12:
+    color: "#F3EEE3"
+    image: assets/splash/splash_logo@3x.png
+
+  # iOS configuration
+  ios: true
+
+  # Android configuration
+  android: true
+
+  # Fullscreen mode
+  fullscreen: true
+
+# App icon configuration
+flutter_launcher_icons:
+  # iOS icon (1024x1024)
+  image_path: "assets/icon.png"
+
+  # Android adaptive icon
+  android: true
+  adaptive_icon_background: "#47535b"
+  adaptive_icon_foreground: "assets/icon_foreground.png"
+
+  # iOS configuration
+  ios: true
+
+  # Remove old default icons
+  remove_alpha_ios: true
+
+  # Platform-specific settings
+  min_sdk_android: 21

@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "DDTHPC3MK9.com.openlibrary.reader",
+        "paths": ["/openlibrary_reader/oauth-redirect.html"]
+      }
+    ]
+  }
+}

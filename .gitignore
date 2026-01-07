@@ -60,3 +60,4 @@ android/key.properties
 
 # Flutter plugins cache
 .flutter-plugins
+lib/core/network/local_config.dart

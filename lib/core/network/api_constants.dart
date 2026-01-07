@@ -1,7 +1,11 @@
+import 'local_config.dart';
+
 class ApiConstants {
   // Base URLs
-  static const String openLibraryBaseUrl = 'https://openlibrary.org';
+//  static const String openLibraryBaseUrl = 'https://openlibrary.org';
   static const String archiveOrgBaseUrl = 'https://archive.org';
+  static const String openLibraryBaseUrl = 'http://192.168.1.9:8080';
+
 
   // Open Library Endpoints
   static const String searchEndpoint = '/search.json';
@@ -28,7 +32,19 @@ class ApiConstants {
   // OAuth2 Configuration
   static const String oauthClientId = 'mobile_app';
   static const String oauthClientSecret = 'mobile_app_secret';
-  static const String oauthRedirectUri = 'https://mheiman.github.io/openlibrary_reader/oauth-redirect.html';
+
+  // OAuth Redirect URI - automatically uses GitHub Pages based on repository
+  // Values come from local_config.dart (git-ignored) or can be overridden with --dart-define
+  // For CI/CD: flutter build apk --dart-define=GITHUB_USERNAME=username --dart-define=GITHUB_REPO=repo
+  // Or override completely: flutter build apk --dart-define=OAUTH_REDIRECT_URI=https://...
+  static const String _githubUsername = String.fromEnvironment('GITHUB_USERNAME', defaultValue: LocalConfig.githubUsername);
+  static const String _githubRepo = String.fromEnvironment('GITHUB_REPO', defaultValue: LocalConfig.githubRepo);
+  static const String _defaultRedirectUri = 'https://$_githubUsername.github.io/$_githubRepo/oauth-redirect.html';
+  static const String oauthRedirectUri = String.fromEnvironment(
+    'OAUTH_REDIRECT_URI',
+    defaultValue: LocalConfig.customOAuthRedirectUri ?? _defaultRedirectUri,
+  );
+
   static const String oauthScope = 'openid profile email';
   
   // OAuth2 Debug/Testing Configuration

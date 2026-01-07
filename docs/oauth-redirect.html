@@ -29,6 +29,9 @@
             height: 120px;
             margin-bottom: 20px;
         }
+        .logo svg {
+            fill: #2B6CB0;
+        }
         h1 {
             font-size: 24px;
             font-weight: 600;
@@ -96,13 +99,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
-    <!-- Device detection indicator - will be updated by JavaScript -->
-    <div id="device-type" style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 9999; display: none;">
-        Detecting device...
-    </div>
+    <!-- Force mobile mode for iPads -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <div class="container">
         <div class="logo">
-            <svg viewBox="0 0 24 24" fill="#2B6CB0">
+            <svg viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
         </div>
@@ -178,7 +179,9 @@
         } else {
             // Enhanced mobile detection with better iOS detection
             const userAgent = navigator.userAgent;
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+            const isMobile = /iPhone|iPad|iPod|Android|iOS/i.test(userAgent) || 
+                           (navigator.maxTouchPoints > 1) || 
+                           ('ontouchstart' in document.documentElement);
             
             // Additional check for iOS standalone mode (PWA)
             const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
@@ -245,10 +248,28 @@
                 document.body.appendChild(debugInfo);
             }
 
-            if (isMobile) {
+            // Add fallback for devices that don't match user agent detection
+            const isLikelyMobile = window.innerWidth < 800 || window.innerHeight < 600 || 
+                                 (navigator.maxTouchPoints && navigator.maxTouchPoints > 1) || 
+                                 ('ontouchstart' in window);
+            
+            console.log('Fallback mobile detection:', isLikelyMobile);
+            
+            if (isMobile || isLikelyMobile) {
+                // Update device indicator
+                const deviceIndicator = document.getElementById('device-type');
+                if (deviceIndicator) {
+                    deviceIndicator.innerHTML = `
+                        📱 Mobile Device Detected<br>
+                        UA: ${navigator.userAgent.substring(0, 40)}...<br>
+                        Screen: ${window.innerWidth}x${window.innerHeight}<br>
+                        Touch: ${navigator.maxTouchPoints > 0 ? 'YES' : 'NO'}
+                    `;
+                }
+                
                 // Show alert with device info for debugging
                 setTimeout(() => {
-                    alert(`📱 Device Detection:\n\nUser Agent: ${navigator.userAgent.substring(0, 80)}...\nPlatform: ${navigator.platform}\nMobile: ${isMobile}\niOS: ${isIOSDevice}`);
+                    alert(`📱 Device Detection:\n\nUser Agent: ${navigator.userAgent.substring(0, 80)}...\nPlatform: ${navigator.platform}\nMobile: ${isMobile}\niOS: ${isIOSDevice}\nFallback: ${isLikelyMobile}\nScreen: ${window.innerWidth}x${window.innerHeight}`);
                 }, 500);
                 
                 // For mobile devices, try to open the app using Universal Links / App Links

@@ -10,7 +10,7 @@ import 'package:logger/logger.dart';
 class LoggingService {
   static final Logger _logger = Logger(
     printer: PrettyPrinter(
-      methodCount: 1,           // Show 1 method call in stack trace (succinct)
+      methodCount: 0,           // Show 1 method call in stack trace (succinct)
       errorMethodCount: 5,     // Show 5 method calls for errors
       lineLength: 60,         // Line length before wrapping
       colors: false,           // Disable colors to avoid ANSI codes

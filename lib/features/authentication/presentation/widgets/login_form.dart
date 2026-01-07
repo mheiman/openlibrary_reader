@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/di/injection.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../state/auth_notifier.dart';
 import '../state/auth_state.dart';
+import 'manual_oauth_dialog.dart';
 
 /// Login form widget
 class LoginForm extends StatefulWidget {
@@ -21,12 +24,30 @@ class _LoginFormState extends State<LoginForm> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _hasActiveOAuthFlow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForActiveOAuthFlow();
+  }
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  /// Check if there's an active OAuth flow in progress
+  Future<void> _checkForActiveOAuthFlow() async {
+    final secureStorage = getIt<SecureStorageService>();
+    final oauthState = await secureStorage.read('oauth_state');
+    if (mounted) {
+      setState(() {
+        _hasActiveOAuthFlow = oauthState != null && oauthState.isNotEmpty;
+      });
+    }
   }
 
   void _handleLogin() {
@@ -143,6 +164,19 @@ class _LoginFormState extends State<LoginForm> {
                       ),
                     ),
                   ),
+
+                  // Manual code entry button - only visible if OAuth flow is active
+                  if (_hasActiveOAuthFlow) ...[
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: isLoading ? null : _showManualCodeDialog,
+                      icon: const Icon(Icons.vpn_key, size: 18),
+                      label: const Text(
+                        'Having trouble? Enter code manually',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -154,5 +188,16 @@ class _LoginFormState extends State<LoginForm> {
 
   void _handleOAuthLogin() {
     widget.authNotifier.initiateOAuthLogin();
+    // After initiating OAuth, check again to show the manual entry button
+    _checkForActiveOAuthFlow();
+  }
+
+  void _showManualCodeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => ManualOAuthDialog(
+        authNotifier: widget.authNotifier,
+      ),
+    );
   }
 }

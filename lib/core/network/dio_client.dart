@@ -33,18 +33,27 @@ class DioClient {
         handler.next(options);
       },
       onResponse: (response, handler) {
-        LoggingService.trace('[DIO] *** Response ***');
-        LoggingService.trace('[DIO] uri: ${response.requestOptions.uri}');
-        LoggingService.trace('[DIO] statusCode: ${response.statusCode}');
+        LoggingService.error('[DIO] *** Response ***');
+        LoggingService.error('[DIO] uri: ${response.requestOptions.uri}');
+        LoggingService.error('[DIO] statusCode: ${response.statusCode}');
+        LoggingService.error('[DIO] Content-Type: ${response.headers.value('content-type')}');
+        LoggingService.error('[DIO] Response data type: ${response.data.runtimeType}');
 
         // Only log response body if it's JSON
         final contentType = response.headers.value('content-type');
         if (contentType != null && contentType.contains('application/json')) {
-          LoggingService.trace('[DIO] data: ${response.data}');
+          LoggingService.error('[DIO] data: ${response.data}');
         } else if (contentType != null && contentType.contains('text/html')) {
-          LoggingService.trace('[DIO] data: <HTML content omitted>');
+          LoggingService.error('[DIO] data: <HTML content omitted>');
+          if (response.data != null) {
+            LoggingService.error('[DIO] HTML length: ${response.data.toString().length} chars');
+          }
         } else {
-          LoggingService.trace('[DIO] data: <Non-JSON content, type: $contentType>');
+          LoggingService.error('[DIO] data: <Non-JSON content, type: $contentType>');
+          if (response.data != null) {
+            final preview = response.data.toString();
+            LoggingService.error('[DIO] data preview: ${preview.length > 200 ? preview.substring(0, 200) : preview}...');
+          }
         }
 
         handler.next(response);
@@ -92,9 +101,19 @@ class DioClient {
 
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
-        final message = error.response?.data?['message'] ??
-            error.response?.statusMessage ??
-            'Server error';
+
+        // Safely extract message from response data
+        String message = 'Server error';
+        final responseData = error.response?.data;
+
+        if (responseData is Map && responseData['message'] != null) {
+          message = responseData['message'].toString();
+        } else if (responseData is String) {
+          // Server returned HTML or plain text error
+          message = error.response?.statusMessage ?? 'Server returned an error';
+        } else if (error.response?.statusMessage != null) {
+          message = error.response!.statusMessage!;
+        }
 
         if (statusCode == 401) {
           return UnauthorizedException(message);

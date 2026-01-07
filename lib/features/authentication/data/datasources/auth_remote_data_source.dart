@@ -100,11 +100,15 @@ class AuthRemoteDataSource {
       _cookieHeader = null;
       _loggedIn = false;
 
-      // Clear stored credentials
+      // Clear stored credentials and session
       await secureStorage.delete('username');
       await secureStorage.delete('password');
       await secureStorage.delete('userId');
       await secureStorage.delete('displayName');
+      await secureStorage.delete('session_cookie'); // Clear session cookie to prevent auto-login on hot reload
+      // NOTE: We intentionally do NOT clear 'last_oauth_callback' here
+      // It should persist to prevent reprocessing old callbacks even after logout
+      // It's only cleared when starting a NEW OAuth flow
     } catch (e) {
       throw CacheException('Logout failed: $e');
     }
@@ -257,13 +261,17 @@ class AuthRemoteDataSource {
 
         // Restore cookie to cookie manager so WebView can use it
         try {
+          final uri = Uri.parse(ApiConstants.openLibraryBaseUrl);
+          final domain = uri.host;
+          final isSecure = uri.scheme == 'https';
+
           await cookieManager.setCookie(
             url: url,
             name: 'session',
             value: sessionValue,
-            domain: 'openlibrary.org',
+            domain: domain,
             path: '/',
-            isSecure: true,
+            isSecure: isSecure,
           );
         } catch (e) {
         }
@@ -292,13 +300,17 @@ class AuthRemoteDataSource {
       // Save cookie to cookie manager for persistence
       try {
         final url = WebUri(ApiConstants.openLibraryBaseUrl);
+        final uri = Uri.parse(ApiConstants.openLibraryBaseUrl);
+        final domain = uri.host;
+        final isSecure = uri.scheme == 'https';
+
         await cookieManager.setCookie(
           url: url,
           name: 'session',
           value: sessionValue,
-          domain: 'openlibrary.org',
+          domain: domain,
           path: '/',
-          isSecure: true,
+          isSecure: isSecure,
         );
       } catch (e) {
       }

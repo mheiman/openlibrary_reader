@@ -7,6 +7,7 @@ class AppRoutes {
   // Authentication
   static const String login = '/login';
   static const String logout = '/logout';
+  static const String oauthCallback = '/oauth2/callback';
 
   // Main features
   static const String home = '/home';

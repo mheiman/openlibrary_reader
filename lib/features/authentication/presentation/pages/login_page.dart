@@ -23,6 +23,10 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _authNotifier = getIt<AuthNotifier>();
     _authNotifier.addListener(_onAuthStateChanged);
+
+    // Clear any stale OAuth data when user lands on login page
+    // This prevents hot reload from trying to resume incomplete OAuth flows
+    _authNotifier.clearStaleOAuthData();
   }
 
   @override

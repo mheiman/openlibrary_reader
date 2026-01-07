@@ -10,6 +10,7 @@ import '../network/api_constants.dart';
 import '../network/dio_client.dart';
 import '../services/logging_service.dart';
 import '../storage/secure_storage_service.dart';
+import 'dart:math' as math;
 
 /// OAuth service for handling OAuth2 flows
 @lazySingleton
@@ -44,15 +45,18 @@ class OAuthService {
   /// Generate OAuth2 authorization URL
   Future<String> generateAuthorizationUrl() async {
     LoggingService.debug('🔑 [OAuth] Starting OAuth authorization flow');
-    
+
+    // Clear any previous OAuth callback tracking to allow new flow
+    await secureStorage.delete('last_oauth_callback');
+
     LoggingService.debug('🔑 [OAuth] Generating PKCE code verifier and challenge...');
     final pkce = await _generatePKCE();
     final state = _generateRandomString(16);
-    
+
     LoggingService.debug('🔑 [OAuth] Generated PKCE code verifier: ${pkce['code_verifier']}');
     LoggingService.debug('🔑 [OAuth] Generated PKCE code challenge: ${pkce['code_challenge']}');
     LoggingService.debug('🔑 [OAuth] Generated state: $state');
-    
+
     // Store PKCE and state for later verification
     LoggingService.debug('🔑 [OAuth] Storing PKCE and state in secure storage...');
     await secureStorage.write('oauth_code_verifier', pkce['code_verifier']!);
@@ -168,21 +172,86 @@ class OAuthService {
       // Exchange code for tokens
       LoggingService.debug('🔑 [OAuth] Exchanging authorization code for tokens...');
       LoggingService.debug('🔑 [OAuth] Token endpoint: ${ApiConstants.openLibraryBaseUrl}${ApiConstants.oauthTokenPath}');
-      
-      final response = await dioClient.post(
-        '${ApiConstants.openLibraryBaseUrl}${ApiConstants.oauthTokenPath}',
-        data: {
-          'grant_type': 'authorization_code',
-          'code': code,
-          'redirect_uri': ApiConstants.oauthRedirectUri,
-          'client_id': ApiConstants.oauthClientId,
-          'code_verifier': codeVerifier,
-        },
-        options: Options(
-          contentType: Headers.formUrlEncodedContentType,
-        ),
-      );
-      
+
+      // Log request parameters (redact sensitive values in production)
+      final requestData = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': ApiConstants.oauthRedirectUri,
+        'client_id': ApiConstants.oauthClientId,
+        'client_secret': ApiConstants.oauthClientSecret,
+        'code_verifier': codeVerifier,
+      };
+      LoggingService.error('🔑 [OAuth] ===== TOKEN REQUEST PARAMETERS =====');
+      LoggingService.error('  - grant_type: ${requestData['grant_type']}');
+      LoggingService.error('  - code: ${code.substring(0, math.min(10, code.length))}...${code.length > 10 ? code.substring(code.length - 10) : ""}');
+      LoggingService.error('  - redirect_uri: ${requestData['redirect_uri']}');
+      LoggingService.error('  - client_id: ${requestData['client_id']}');
+      LoggingService.error('  - client_secret: ${requestData['client_secret']}');
+      LoggingService.error('  - code_verifier: ${codeVerifier.substring(0, math.min(10, codeVerifier.length))}...${codeVerifier.length > 10 ? codeVerifier.substring(codeVerifier.length - 10) : ""}');
+      LoggingService.error('🔑 [OAuth] ==========================================');
+
+      Response response;
+      try {
+        response = await dioClient.dio.post(
+          '${ApiConstants.openLibraryBaseUrl}${ApiConstants.oauthTokenPath}',
+          data: requestData,
+          options: Options(
+            contentType: Headers.formUrlEncodedContentType,
+          ),
+        );
+      } on DioException catch (dioError) {
+        // Catch DioException here - it may already be wrapped by interceptor
+        LoggingService.error('🔑 [OAuth] Raw DioException caught:');
+        LoggingService.error('  - Type: ${dioError.type}');
+        LoggingService.error('  - Message: ${dioError.message}');
+        LoggingService.error('  - Error object type: ${dioError.error.runtimeType}');
+        LoggingService.error('  - Error object: ${dioError.error}');
+        LoggingService.error('  - Status Code: ${dioError.response?.statusCode}');
+        LoggingService.error('  - Response Data Type: ${dioError.response?.data.runtimeType}');
+
+        // Check if the error was already converted by interceptor
+        if (dioError.error is AppException) {
+          final appException = dioError.error as AppException;
+          LoggingService.error('  - Wrapped AppException: $appException');
+
+          // Check if we actually got an HTTP response
+          if (dioError.response == null) {
+            LoggingService.error('  - No HTTP response received (server may have crashed or timed out)');
+            throw AuthException(
+              'OAuth token request failed: No response from server. '
+              'The server may be down, crashed while processing, or the request timed out.',
+              null,
+            );
+          }
+
+          // If we have a status code, use it
+          final statusCode = dioError.response!.statusCode;
+          throw AuthException(
+            'OAuth server rejected token request ($statusCode ${dioError.response!.statusMessage}). '
+            'Check server logs for details.',
+            statusCode,
+          );
+        }
+
+        if (dioError.response?.data is String) {
+          final htmlData = dioError.response?.data as String;
+          // Extract useful info from HTML error if possible
+          if (htmlData.contains('<title>')) {
+            final titleMatch = RegExp(r'<title>(.*?)</title>').firstMatch(htmlData);
+            if (titleMatch != null) {
+              LoggingService.error('  - HTML Error Title: ${titleMatch.group(1)}');
+            }
+          }
+          LoggingService.error('  - Response is HTML (${htmlData.length} chars)');
+        } else if (dioError.response?.data is Map) {
+          LoggingService.error('  - Response Data: ${dioError.response?.data}');
+        }
+
+        // Re-throw to be caught by outer handler
+        rethrow;
+      }
+
       LoggingService.debug('🔑 [OAuth] Token exchange response status: ${response.statusCode}');
       LoggingService.debug('🔑 [OAuth] Token exchange response data: ${response.data}');
       
@@ -195,10 +264,37 @@ class OAuthService {
       }
     } on DioException catch (e) {
       LoggingService.error('🔑 [OAuth] DioException during token exchange: ${e.message}');
+      LoggingService.error('🔑 [OAuth] DioException type: ${e.type}');
+      LoggingService.error('🔑 [OAuth] Response status code: ${e.response?.statusCode}');
+      LoggingService.error('🔑 [OAuth] Response data type: ${e.response?.data.runtimeType}');
+      LoggingService.error('🔑 [OAuth] Response data: ${e.response?.data}');
+      LoggingService.error('🔑 [OAuth] Response headers: ${e.response?.headers}');
+
       if (e.response?.statusCode == 400) {
-        LoggingService.error('🔑 [OAuth] Invalid authorization code: ${e.response?.data?['error_description']}');
-        throw AuthException('Invalid authorization code: ${e.response?.data?['error_description']}', 400);
+        // Try to extract error details from response
+        String errorMessage = 'Invalid OAuth request';
+
+        if (e.response?.data is Map) {
+          final errorData = e.response?.data as Map;
+          final error = errorData['error'];
+          final errorDescription = errorData['error_description'];
+
+          LoggingService.error('🔑 [OAuth] Server error: $error');
+          LoggingService.error('🔑 [OAuth] Server error description: $errorDescription');
+
+          if (errorDescription != null) {
+            errorMessage = errorDescription.toString();
+          } else if (error != null) {
+            errorMessage = error.toString();
+          }
+        } else if (e.response?.data is String) {
+          LoggingService.error('🔑 [OAuth] Server returned HTML/text error: ${e.response?.data}');
+          errorMessage = 'Server returned error (check logs for details)';
+        }
+
+        throw AuthException('OAuth token exchange failed: $errorMessage', 400);
       }
+
       throw NetworkException(e.message ?? 'Network error during token exchange');
     } catch (e) {
       LoggingService.error('🔑 [OAuth] Exception during token exchange: $e');
@@ -303,20 +399,33 @@ class OAuthService {
     if (cookieReg.hasMatch(setCookieHeader)) {
       final match = cookieReg.firstMatch(setCookieHeader);
       final sessionValue = match!.group(1)!;
-      
-      // Save cookie to cookie manager for persistence
+
+      // Save to secure storage as backup (survives hot reload and app restarts)
+      try {
+        await secureStorage.write('session_cookie', sessionValue);
+        LoggingService.debug('🔑 [OAuth] Saved session cookie to secure storage');
+      } catch (e) {
+        LoggingService.warning('Failed to save OAuth cookie to secure storage: $e');
+      }
+
+      // Save cookie to cookie manager for WebView persistence
       try {
         final url = WebUri(ApiConstants.openLibraryBaseUrl);
+        final uri = Uri.parse(ApiConstants.openLibraryBaseUrl);
+        final domain = uri.host;
+        final isSecure = uri.scheme == 'https';
+
         await cookieManager.setCookie(
           url: url,
           name: 'session',
           value: sessionValue,
-          domain: 'openlibrary.org',
+          domain: domain,
           path: '/',
-          isSecure: true,
+          isSecure: isSecure,
         );
+        LoggingService.debug('🔑 [OAuth] Saved session cookie to CookieManager (domain: $domain, secure: $isSecure)');
       } catch (e) {
-        LoggingService.debug('Failed to save OAuth cookie: $e');
+        LoggingService.warning('Failed to save OAuth cookie to CookieManager: $e');
       }
     }
   }
@@ -327,6 +436,9 @@ class OAuthService {
       await secureStorage.delete('oauth_state');
       await secureStorage.delete('oauth_code_verifier');
       await secureStorage.delete('oauth_tokens');
+      // NOTE: We intentionally do NOT clear 'last_oauth_callback' here
+      // It should persist to prevent reprocessing old callbacks even after logout
+      // It's only cleared when starting a NEW OAuth flow in generateAuthorizationUrl()
     } catch (e) {
       LoggingService.debug('Failed to clear OAuth data: $e');
     }

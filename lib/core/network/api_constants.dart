@@ -1,9 +1,7 @@
 class ApiConstants {
   // Base URLs
-//  static const String openLibraryBaseUrl = 'https://openlibrary.org';
+  static const String openLibraryBaseUrl = 'https://openlibrary.org';
   static const String archiveOrgBaseUrl = 'https://archive.org';
-  static const String openLibraryBaseUrl = 'http://192.168.1.9:8080';
-
 
   // Open Library Endpoints
   static const String searchEndpoint = '/search.json';
@@ -29,6 +27,7 @@ class ApiConstants {
   
   // OAuth2 Configuration
   static const String oauthClientId = 'mobile_app';
+  static const String oauthClientSecret = 'mobile_app_secret';
   static const String oauthRedirectUri = 'https://mheiman.github.io/openlibrary_reader/oauth-redirect.html';
   static const String oauthScope = 'openid profile email';
   

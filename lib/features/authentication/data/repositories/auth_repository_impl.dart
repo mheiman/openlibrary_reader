@@ -112,17 +112,21 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
         // Exchange code for tokens
         final tokens = await oauthService.exchangeCodeForTokens(code, state);
         final accessToken = tokens['access_token'] as String;
-        
+
         // Exchange tokens for session cookie
         await oauthService.exchangeTokensForCookie(accessToken);
-        
+
+        // Ensure auth data source loads the cookie that was just saved
+        // This ensures immediate availability for subsequent API calls
+        await remoteDataSource.ensureCookiesLoaded();
+
         // Get user info
         final userInfo = await oauthService.getUserInfo(accessToken);
-        
+
         // Store user info in secure storage for auto-login
         final username = userInfo['username'] as String? ?? userInfo['sub'] as String? ?? '';
         await remoteDataSource.secureStorage.write('username', username);
-        
+
         // Create and return user model
         return UserModel(
           userId: userInfo['sub'] as String? ?? '',

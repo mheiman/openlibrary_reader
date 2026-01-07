@@ -1,8 +1,11 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:injectable/injectable.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../../../core/services/logging_service.dart';
+import '../../../../core/services/oauth_service.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../../domain/usecases/check_login_status.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/handle_oauth_callback.dart';
@@ -20,9 +23,14 @@ class AuthNotifier extends ChangeNotifier {
   final GetCurrentUser getCurrentUserUseCase;
   final InitiateOAuthLogin initiateOAuthLoginUseCase;
   final HandleOAuthCallback handleOAuthCallbackUseCase;
+  final SecureStorageService secureStorage;
+  final OAuthService oauthService;
 
   AuthState _state = const AuthInitial();
   AuthState get state => _state;
+
+  // Track the last processed code to prevent duplicate handling
+  String? _lastProcessedCode;
 
   AuthNotifier({
     required this.loginUseCase,
@@ -31,6 +39,8 @@ class AuthNotifier extends ChangeNotifier {
     required this.getCurrentUserUseCase,
     required this.initiateOAuthLoginUseCase,
     required this.handleOAuthCallbackUseCase,
+    required this.secureStorage,
+    required this.oauthService,
   });
 
   /// Update state and notify listeners
@@ -59,9 +69,24 @@ class AuthNotifier extends ChangeNotifier {
 
     result.fold(
       (failure) => _emit(AuthError(failure.message)),
-      (_) {
-        // Clear image cache on successful logout
-        // Note: CachedNetworkImage doesn't have a built-in method to clear all cache
+      (_) async {
+        // Clear OAuth tracking
+        _lastProcessedCode = null;
+
+        // Clear image caches on successful logout
+        try {
+          // Clear Flutter's built-in image cache
+          PaintingBinding.instance.imageCache.clear();
+          PaintingBinding.instance.imageCache.clearLiveImages();
+
+          // Clear CachedNetworkImage's cache
+          await DefaultCacheManager().emptyCache();
+
+          LoggingService.debug('Image caches cleared on logout');
+        } catch (e) {
+          LoggingService.warning('Failed to clear image cache: $e');
+        }
+
         _emit(const Unauthenticated('Logged out successfully'));
       },
     );
@@ -144,12 +169,18 @@ class AuthNotifier extends ChangeNotifier {
                 mode: LaunchMode.externalApplication, // Force external browser
               );
               LoggingService.debug('🔑 [AuthNotifier] Successfully launched OAuth URL in external browser');
+
+              // Return to unauthenticated state so user can still use login form if they return
+              _emit(const Unauthenticated());
             } catch (launchError) {
               LoggingService.error('🔑 [AuthNotifier] External launch failed, trying platform default: $launchError');
-              
+
               // Fallback to default launch mode
               await launchUrlString(properlyEncodedUrl);
               LoggingService.debug('🔑 [AuthNotifier] Successfully launched OAuth URL with default mode');
+
+              // Return to unauthenticated state so user can still use login form if they return
+              _emit(const Unauthenticated());
             }
           } else {
             LoggingService.error('🔑 [AuthNotifier] Failed to launch OAuth login URL - cannot launch URL');
@@ -184,7 +215,14 @@ class AuthNotifier extends ChangeNotifier {
     LoggingService.debug('🔑 [AuthNotifier] Handling OAuth callback');
     LoggingService.debug('🔑 [AuthNotifier] Authorization code: $code');
     LoggingService.debug('🔑 [AuthNotifier] State: $state');
-    
+
+    // Prevent duplicate processing of the same authorization code
+    if (_lastProcessedCode == code) {
+      LoggingService.debug('🔑 [AuthNotifier] Ignoring duplicate OAuth callback for same code');
+      return;
+    }
+    _lastProcessedCode = code;
+
     _emit(const AuthLoading());
 
     LoggingService.debug('🔑 [AuthNotifier] Calling handleOAuthCallback use case...');
@@ -193,6 +231,7 @@ class AuthNotifier extends ChangeNotifier {
     result.fold(
       (failure) {
         LoggingService.error('🔑 [AuthNotifier] OAuth callback handling failed: ${failure.message}');
+        _lastProcessedCode = null; // Clear on failure so it can be retried
         _emit(AuthError(failure.message));
       },
       (user) {
@@ -201,5 +240,38 @@ class AuthNotifier extends ChangeNotifier {
         _emit(Authenticated(user));
       },
     );
+  }
+
+  /// Handle manual OAuth code entry
+  /// Retrieves the stored OAuth state and processes the manually entered code
+  Future<void> handleManualOAuthCode(String code) async {
+    LoggingService.debug('🔑 [AuthNotifier] Handling manual OAuth code entry');
+    LoggingService.debug('🔑 [AuthNotifier] Authorization code: $code');
+
+    // Retrieve the stored OAuth state
+    final state = await secureStorage.read('oauth_state');
+
+    if (state == null || state.isEmpty) {
+      LoggingService.error('🔑 [AuthNotifier] No OAuth state found in storage');
+      _emit(const AuthError(
+        'No active OAuth session found. Please start the login process again.',
+      ));
+      return;
+    }
+
+    LoggingService.debug('🔑 [AuthNotifier] Retrieved stored state: $state');
+
+    // Use the existing handleOAuthCallback method
+    await handleOAuthCallback(code, state);
+  }
+
+  /// Clear stale OAuth data from secure storage
+  /// Called when landing on login page to prevent incomplete OAuth flows from interfering
+  void clearStaleOAuthData() {
+    LoggingService.debug('🔑 [AuthNotifier] Clearing stale OAuth data');
+    // Clear OAuth-related data asynchronously without blocking UI
+    oauthService.clearOAuthData().catchError((error) {
+      LoggingService.warning('Failed to clear stale OAuth data: $error');
+    });
   }
 }

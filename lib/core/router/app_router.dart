@@ -24,16 +24,36 @@ class AppRouter {
       debugLogDiagnostics: true,
       refreshListenable: authNotifier, // Re-evaluate redirect when auth state changes
       redirect: (context, state) {
+        final location = state.uri.toString();
+
+        // Handle custom scheme deep links (e.g., com.openlibrary.reader://oauth2/callback)
+        // These are already handled by AppLinks in main.dart, so just redirect to home
+        if (location.startsWith('com.openlibrary.reader://')) {
+          // Extract path from custom scheme URL
+          final uri = Uri.parse(location);
+          if (uri.host == 'oauth2' && uri.path == '/callback') {
+            // OAuth callback is handled by AppLinks, redirect to callback page
+            final code = uri.queryParameters['code'];
+            final oauthState = uri.queryParameters['state'];
+            if (code != null && oauthState != null) {
+              return '${AppRoutes.oauthCallback}?code=$code&state=$oauthState';
+            }
+          }
+          // For other custom scheme URLs, redirect to root
+          return AppRoutes.root;
+        }
+
         final authState = authNotifier.state;
         final isLoginPage = state.matchedLocation == AppRoutes.login;
+        final isOAuthCallbackPage = state.matchedLocation == AppRoutes.oauthCallback;
 
         // If unauthenticated and not already on login page, redirect to login
         if (authState is Unauthenticated && !isLoginPage) {
           return AppRoutes.login;
         }
 
-        // If authenticated and on login page, redirect to home
-        if (authState is Authenticated && isLoginPage) {
+        // If authenticated and on login or OAuth callback page, redirect to home
+        if (authState is Authenticated && (isLoginPage || isOAuthCallbackPage)) {
           return AppRoutes.root;
         }
 
@@ -58,6 +78,31 @@ class AppRouter {
           path: AppRoutes.login,
           name: 'login',
           builder: (context, state) => const LoginPage(),
+        ),
+
+        // OAuth Callback
+        GoRoute(
+          path: AppRoutes.oauthCallback,
+          name: 'oauth-callback',
+          builder: (context, state) {
+            // Extract OAuth parameters from query string
+            final code = state.uri.queryParameters['code'];
+            final oauthState = state.uri.queryParameters['state'];
+
+            // Handle the OAuth callback
+            if (code != null && oauthState != null) {
+              // Get auth notifier and handle callback
+              final authNotifier = getIt<AuthNotifier>();
+
+              // Handle callback asynchronously
+              Future.microtask(() {
+                authNotifier.handleOAuthCallback(code, oauthState);
+              });
+            }
+
+            // Show loading screen while processing
+            return const _OAuthCallbackPage();
+          },
         ),
 
         // Main Features
@@ -132,6 +177,83 @@ class AppRouter {
       ],
       errorBuilder: (context, state) => _PlaceholderPage(
         title: 'Error: ${state.error}',
+      ),
+    );
+  }
+}
+
+/// OAuth callback page - shown while processing OAuth login
+class _OAuthCallbackPage extends StatefulWidget {
+  const _OAuthCallbackPage();
+
+  @override
+  State<_OAuthCallbackPage> createState() => _OAuthCallbackPageState();
+}
+
+class _OAuthCallbackPageState extends State<_OAuthCallbackPage> {
+  @override
+  Widget build(BuildContext context) {
+    final authNotifier = getIt<AuthNotifier>();
+
+    return Scaffold(
+      body: ListenableBuilder(
+        listenable: authNotifier,
+        builder: (context, _) {
+          final authState = authNotifier.state;
+
+          // If authenticated, GoRouter's redirect will handle navigation
+          // No need to manually navigate here
+
+          // If error, show error message
+          if (authState is AuthError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Authentication Failed',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      authState.message,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => context.go(AppRoutes.login),
+                    child: const Text('Back to Login'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Show loading state (for both initial loading and authenticated state)
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Completing login...',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

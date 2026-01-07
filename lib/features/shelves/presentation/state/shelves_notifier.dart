@@ -98,6 +98,11 @@ class ShelvesNotifier extends ChangeNotifier {
     if (previousState is AuthLoading && currentState is Unauthenticated) {
       _clearShelfDataAndCache();
     }
+    // Clear cache when login starts: Unauthenticated → AuthLoading
+    // This ensures old user's cached data is cleared before new user's data loads
+    else if (previousState is Unauthenticated && currentState is AuthLoading) {
+      _clearShelfDataAndCache();
+    }
     // Refresh on explicit login: AuthLoading → Authenticated
     // (Login goes through AuthLoading state: Unauthenticated → AuthLoading → Authenticated)
     else if (previousState is AuthLoading && currentState is Authenticated) {
@@ -129,6 +134,12 @@ class ShelvesNotifier extends ChangeNotifier {
     final authState = authNotifier.state;
     if (authState is Unauthenticated) {
       return;
+    }
+
+    // If force refresh and no loaded data, clear cache first to ensure no stale data
+    // This is especially important when switching between users
+    if (forceRefresh && _state is! ShelvesLoaded) {
+      await repository.clearCache();
     }
 
     // If we already have loaded shelves, keep showing them while refreshing

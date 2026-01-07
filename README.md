@@ -41,6 +41,14 @@ flutter pub get
 flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
+4. **Configure OAuth (Required):**
+```bash
+cp lib/core/network/local_config.dart.template lib/core/network/local_config.dart
+```
+Then edit `lib/core/network/local_config.dart` with your GitHub username.
+
+For detailed OAuth setup instructions, see [OAUTH_SETUP.md](OAUTH_SETUP.md).
+
 ### Android Signing Setup
 
 For release builds, you'll need to configure Android signing:
@@ -95,6 +103,7 @@ flutter test
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture and development guide
+- [OAUTH_SETUP.md](OAUTH_SETUP.md) - OAuth configuration for forks and deployments
 
 ## License
 

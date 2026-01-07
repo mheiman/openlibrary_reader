@@ -96,6 +96,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
+    <!-- Device detection indicator - will be updated by JavaScript -->
+    <div id="device-type" style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 9999; display: none;">
+        Detecting device...
+    </div>
     <div class="container">
         <div class="logo">
             <svg viewBox="0 0 24 24" fill="#2B6CB0">
@@ -137,6 +141,15 @@
     </div>
 
     <script>
+        // Simple device detection test
+        console.log('🔍 Page loaded - checking device type');
+        
+        // Show device detection indicator immediately
+        const deviceIndicator = document.getElementById('device-type');
+        if (deviceIndicator) {
+            deviceIndicator.style.display = 'block';
+        }
+        
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');

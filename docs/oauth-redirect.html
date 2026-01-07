@@ -202,8 +202,42 @@
               language: navigator.language,
               onLine: navigator.onLine
             });
+            
+            // Create a debug info element to show on page
+            const debugInfo = document.createElement('div');
+            debugInfo.id = 'debug-info';
+            debugInfo.style.position = 'fixed';
+            debugInfo.style.bottom = '10px';
+            debugInfo.style.right = '10px';
+            debugInfo.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            debugInfo.style.color = 'white';
+            debugInfo.style.padding = '10px';
+            debugInfo.style.borderRadius = '5px';
+            debugInfo.style.fontSize = '12px';
+            debugInfo.style.zIndex = '9999';
+            debugInfo.style.fontFamily = 'monospace';
+            
+            const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            
+            debugInfo.innerHTML = `
+                <strong>Device:</strong> ${isMobileDevice ? 'Mobile' : 'Desktop'}<br>
+                <strong>iOS:</strong> ${isIOSDevice ? 'Yes' : 'No'}<br>
+                <strong>UA:</strong> ${navigator.userAgent.substring(0, 50)}...<br>
+                <strong>Mode:</strong> ${isMobileDevice ? 'Mobile' : 'Desktop'}
+            `;
+            
+            // Only show on mobile devices
+            if (isMobileDevice) {
+                document.body.appendChild(debugInfo);
+            }
 
             if (isMobile) {
+                // Show alert with device info for debugging
+                setTimeout(() => {
+                    alert(`📱 Device Detection:\n\nUser Agent: ${navigator.userAgent.substring(0, 80)}...\nPlatform: ${navigator.platform}\nMobile: ${isMobile}\niOS: ${isIOSDevice}`);
+                }, 500);
+                
                 // For mobile devices, try to open the app using Universal Links / App Links
                 // Try immediately - no delay needed
                 window.location.href = `com.openlibrary.reader://oauth2/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;

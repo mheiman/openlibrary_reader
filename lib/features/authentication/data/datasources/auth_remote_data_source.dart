@@ -300,9 +300,6 @@ class AuthRemoteDataSource {
           path: '/',
           isSecure: true,
         );
-
-        // Verify it was saved
-        final savedCookies = await cookieManager.getCookies(url: url);
       } catch (e) {
       }
     }

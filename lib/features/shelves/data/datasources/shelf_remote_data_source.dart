@@ -788,7 +788,7 @@ class ShelfRemoteDataSource {
       // Extract cover - in jscmd=details, covers is an array of IDs under 'details'
       int? coverImageId;
       String? coverEditionId;
-      if (details != null && details['covers'] != null && details['covers'] is List) {
+      if (details['covers'] != null && details['covers'] is List) {
         final covers = details['covers'] as List;
         if (covers.isNotEmpty) {
           coverImageId = covers[0] as int?;
@@ -796,11 +796,11 @@ class ShelfRemoteDataSource {
       }
 
       // Extract publish date (under details in jscmd=details)
-      final publishDate = details?['publish_date'] as String?;
+      final publishDate = details['publish_date'] as String?;
 
       // Extract publishers (under details in jscmd=details)
       String? publisher;
-      if (details != null && details['publishers'] != null && details['publishers'] is List) {
+      if (details['publishers'] != null && details['publishers'] is List) {
         final publishers = details['publishers'] as List;
         if (publishers.isNotEmpty) {
           // In jscmd=details, publishers is just an array of strings
@@ -809,11 +809,11 @@ class ShelfRemoteDataSource {
       }
 
       // Extract page count (under details in jscmd=details)
-      final numberOfPages = details?['number_of_pages'] as int?;
+      final numberOfPages = details['number_of_pages'] as int?;
 
       // Extract ISBNs (under details in jscmd=details)
       List<String> isbn = [];
-      if (details != null && details['identifiers'] != null && details['identifiers'] is Map) {
+      if (details['identifiers'] != null && details['identifiers'] is Map) {
         final identifiers = details['identifiers'] as Map;
         if (identifiers['isbn_10'] != null && identifiers['isbn_10'] is List) {
           isbn.addAll((identifiers['isbn_10'] as List).map((i) => i.toString()));
@@ -826,11 +826,11 @@ class ShelfRemoteDataSource {
       // Extract description - check multiple possible locations
       String? description;
       // Try subtitle first (common in jscmd=details)
-      if (details != null && details['subtitle'] != null) {
+      if (details['subtitle'] != null) {
         description = details['subtitle'] as String?;
       }
       // Try excerpts
-      if (description == null && details != null && details['excerpts'] != null && details['excerpts'] is List) {
+      if (description == null && details['excerpts'] != null && details['excerpts'] is List) {
         final excerpts = details['excerpts'] as List;
         if (excerpts.isNotEmpty && excerpts[0] is Map) {
           description = (excerpts[0] as Map)['text'] as String?;

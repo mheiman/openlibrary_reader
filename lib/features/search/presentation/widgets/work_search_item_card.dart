@@ -52,8 +52,6 @@ class WorkSearchItemCard extends StatelessWidget {
                     cacheKey: work.coverImageUrl!, // Custom cache key for reliable caching
                     fadeInDuration: const Duration(milliseconds: 200), // Smooth fade-in
                     fadeOutDuration: const Duration(milliseconds: 100), // Smooth fade-out
-                    // Web-specific optimizations
-                    imageRenderMethodForWeb: ImageRenderMethodForWeb.HtmlImage,
                   ),
                 )
               else

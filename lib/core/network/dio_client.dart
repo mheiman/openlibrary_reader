@@ -117,7 +117,6 @@ class DioClient {
         return const NetworkException('Certificate verification failed');
 
       case DioExceptionType.unknown:
-      default:
         return AppException(
           error.message ?? 'An unknown error occurred',
         );

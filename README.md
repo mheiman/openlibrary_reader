@@ -12,7 +12,7 @@ A Flutter application for reading books from Open Library and Internet Archive.
 
 ## Architecture
 
-This project implements **Clean Architecture** with strict separation between domain, data, and presentation layers. See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.
+This project implements **Clean Architecture** with strict separation between domain, data, and presentation layers. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
 
 ## Getting Started
 

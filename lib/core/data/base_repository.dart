@@ -3,7 +3,6 @@ import 'package:dartz/dartz.dart';
 import '../error/exceptions.dart';
 import '../error/failures.dart';
 import '../services/logging_service.dart';
-import '../services/connectivity_service.dart';
 
 /// Base repository class that provides standardized error handling
 /// and common utility methods for all repositories.

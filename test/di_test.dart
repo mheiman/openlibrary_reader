@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ol_reader_clean/core/di/injection.dart';
-import 'package:ol_reader_clean/core/storage/preferences_service.dart';
+import 'package:openlibrary_reader/core/di/injection.dart';
+import 'package:openlibrary_reader/core/storage/preferences_service.dart';
 
 void main() {
   test('DI Test - Verify dependency injection works', () async {

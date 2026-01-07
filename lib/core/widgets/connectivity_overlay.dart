@@ -1,21 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
+import '../di/injection.dart';
 import '../services/connectivity_service.dart';
 
 /// Widget that shows connectivity status overlay
-class ConnectivityOverlay extends StatelessWidget {
+class ConnectivityOverlay extends StatefulWidget {
   final Widget child;
 
   const ConnectivityOverlay({super.key, required this.child});
 
   @override
+  State<ConnectivityOverlay> createState() => _ConnectivityOverlayState();
+}
+
+class _ConnectivityOverlayState extends State<ConnectivityOverlay> {
+  late final ConnectivityService _connectivityService;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectivityService = getIt<ConnectivityService>();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Consumer<ConnectivityService>(
-      builder: (context, connectivity, _) {
+    return ListenableBuilder(
+      listenable: _connectivityService,
+      builder: (context, _) {
         // Show different messages based on connectivity state
-        if (connectivity.isOffline) {
+        if (_connectivityService.isOffline) {
           return _buildOverlay(
             context,
             'No Internet Connection',
@@ -23,7 +37,7 @@ class ConnectivityOverlay extends StatelessWidget {
             null,
             null,
           );
-        } else if (connectivity.isOpenLibraryDown) {
+        } else if (_connectivityService.isOpenLibraryDown) {
           return _buildOverlay(
             context,
             'OpenLibrary Unavailable',
@@ -31,7 +45,7 @@ class ConnectivityOverlay extends StatelessWidget {
             'Check OpenLibrary Status',
             'https://openlibrary.org',
           );
-        } else if (connectivity.isArchiveOrgDown) {
+        } else if (_connectivityService.isArchiveOrgDown) {
           return _buildOverlay(
             context,
             'Archive.org Unavailable',
@@ -40,8 +54,8 @@ class ConnectivityOverlay extends StatelessWidget {
             'https://archive.org',
           );
         }
-        
-        return child;
+
+        return widget.child;
       },
     );
   }
@@ -55,7 +69,7 @@ class ConnectivityOverlay extends StatelessWidget {
   ) {
     return Stack(
       children: [
-        child,
+        widget.child,
         Positioned(
           bottom: 16,
           left: 16,
@@ -76,7 +90,7 @@ class ConnectivityOverlay extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        connectivity.isOffline ? Icons.wifi_off : Icons.cloud_off,
+                        _connectivityService.isOffline ? Icons.wifi_off : Icons.cloud_off,
                         color: Theme.of(context).colorScheme.error,
                         size: 20,
                       ),
@@ -97,8 +111,7 @@ class ConnectivityOverlay extends StatelessWidget {
                         ),
                         onPressed: () {
                           // Dismiss by resetting service status
-                          Provider.of<ConnectivityService>(context, listen: false)
-                              .resetServiceAvailability();
+                          _connectivityService.resetServiceAvailability();
                         },
                       ),
                     ],
@@ -117,12 +130,12 @@ class ConnectivityOverlay extends StatelessWidget {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () => launchUrlString(url),
-                        child: Text(buttonText),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
-                          minimumSize: Size(50, 30),
+                          minimumSize: const Size(50, 30),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
+                        child: Text(buttonText),
                       ),
                     ),
                   ],

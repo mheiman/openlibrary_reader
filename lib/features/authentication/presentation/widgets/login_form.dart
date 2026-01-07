@@ -125,7 +125,7 @@ class _LoginFormState extends State<LoginForm> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Login button
                   ElevatedButton(
@@ -147,9 +147,15 @@ class _LoginFormState extends State<LoginForm> {
                             style: TextStyle(fontSize: 16),
                           ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
+                  Text('or',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center),
+                  const SizedBox(height: 24),
 
-                  // OAuth login button
+              // OAuth login button
                   OutlinedButton.icon(
                     onPressed: isLoading ? null : _handleOAuthLogin,
                     icon: const Icon(Icons.open_in_browser),

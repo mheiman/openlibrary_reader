@@ -91,16 +91,16 @@
         .instructions li {
             margin-bottom: 8px;
         }
+        .code {
+            background-color: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+        }
     </style>
-    <!-- iOS Universal Links Meta Tag -->
-    <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID, app-argument=https://mheiman.github.io/openlibrary_reader/oauth-redirect.html?code=PLACEHOLDER&state=PLACEHOLDER">
-    <!-- Smart App Banner for iOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
-    <!-- Force mobile mode for iPads -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <div class="container">
         <div class="logo">
             <svg viewBox="0 0 24 24">
@@ -114,43 +114,33 @@
         </div>
         <p id="message">Please wait while we complete your login.</p>
         <div id="error" class="error"></div>
-        
+
         <div id="mobile-instructions" class="instructions" style="display: none;">
             <h3>iOS Users:</h3>
             <p>If you're not automatically redirected to the app, please try:</p>
             <ol>
                 <li><strong>Tap the "Open" button</strong> if it appears at the top of Safari</li>
-                <li><strong>Long-press the manual button</strong> below and select "Open in App"</li>
+                <li><strong>Tap the manual button</strong> below to open the app</li>
                 <li>If still not working, close this tab and reopen the app - your login may already be complete</li>
             </ol>
-            <p><strong>Note:</strong> Universal Links require the app to be installed and not force-quit.</p>
         </div>
-        
+
         <div id="desktop-instructions" class="instructions" style="display: none;">
             <h3>Desktop Users:</h3>
             <p>Since you're on a desktop browser:</p>
             <ol>
-                <li>Copy this code: <strong id="auth-code"></strong></li>
+                <li>Copy this code: <span class="code" id="auth-code"></span></li>
                 <li>Return to the OpenLibrary Reader app</li>
                 <li>Paste the code in the app to complete login</li>
             </ol>
         </div>
-        
+
         <button id="manual-button" class="button" style="display: none;">
             Complete Login Manually
         </button>
     </div>
 
     <script>
-        // Simple device detection test
-        console.log('🔍 Page loaded - checking device type');
-        
-        // Show device detection indicator immediately
-        const deviceIndicator = document.getElementById('device-type');
-        if (deviceIndicator) {
-            deviceIndicator.style.display = 'block';
-        }
-        
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
@@ -166,134 +156,33 @@
         // Check for errors
         if (error) {
             document.getElementById('status').style.display = 'none';
-            document.getElementById('error').textContent = 
+            document.getElementById('error').textContent =
                 `Error: ${error}${errorDescription ? ' - ' + errorDescription : ''}`;
-            document.getElementById('message').textContent = 
+            document.getElementById('message').textContent =
                 'There was an issue with the authentication process.';
         } else if (!code || !state) {
             document.getElementById('status').style.display = 'none';
-            document.getElementById('error').textContent = 
+            document.getElementById('error').textContent =
                 'Invalid OAuth callback - missing required parameters.';
-            document.getElementById('message').textContent = 
+            document.getElementById('message').textContent =
                 'Please try the authentication process again.';
         } else {
-            // Enhanced mobile detection with better iOS detection
-            const userAgent = navigator.userAgent;
-            const isMobile = /iPhone|iPad|iPod|Android|iOS/i.test(userAgent) || 
-                           (navigator.maxTouchPoints > 1) || 
-                           ('ontouchstart' in document.documentElement);
-            
-            // Additional check for iOS standalone mode (PWA)
-            const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
-            const isStandalone = window.navigator.standalone || false;
-            
-            console.log('📱 Device Info:', {
-              userAgent: userAgent,
-              isMobile: isMobile,
-              isIOS: isIOS,
-              isStandalone: isStandalone,
-              isSafari: /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgiOS/i.test(userAgent),
-              platform: navigator.platform,
-              maxTouchPoints: navigator.maxTouchPoints
-            });
-            
-            // Log the current URL parameters
-            console.log('🔗 URL Parameters:', {
-              code: code,
-              state: state,
-              fullURL: window.location.href
-            });
-            
-            // Check if we're in an iframe (some browsers open links in iframes)
-            console.log('🖼️ Frame Info:', {
-              isInIframe: window.self !== window.top,
-              parentOrigin: window.location.ancestorOrigins ? window.location.ancestorOrigins[0] : 'none'
-            });
-            
-            // Log navigator capabilities
-            console.log('🌐 Navigator Capabilities:', {
-              userAgent: navigator.userAgent,
-              platform: navigator.platform,
-              appVersion: navigator.appVersion,
-              language: navigator.language,
-              onLine: navigator.onLine
-            });
-            
-            // Create a debug info element to show on page
-            const debugInfo = document.createElement('div');
-            debugInfo.id = 'debug-info';
-            debugInfo.style.position = 'fixed';
-            debugInfo.style.bottom = '10px';
-            debugInfo.style.right = '10px';
-            debugInfo.style.backgroundColor = 'rgba(0,0,0,0.7)';
-            debugInfo.style.color = 'white';
-            debugInfo.style.padding = '10px';
-            debugInfo.style.borderRadius = '5px';
-            debugInfo.style.fontSize = '12px';
-            debugInfo.style.zIndex = '9999';
-            debugInfo.style.fontFamily = 'monospace';
-            
-            const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-            
-            debugInfo.innerHTML = `
-                <strong>Device:</strong> ${isMobileDevice ? 'Mobile' : 'Desktop'}<br>
-                <strong>iOS:</strong> ${isIOSDevice ? 'Yes' : 'No'}<br>
-                <strong>UA:</strong> ${navigator.userAgent.substring(0, 50)}...<br>
-                <strong>Mode:</strong> ${isMobileDevice ? 'Mobile' : 'Desktop'}
-            `;
-            
-            // Only show on mobile devices
-            if (isMobileDevice) {
-                document.body.appendChild(debugInfo);
-            }
+            // Detect if mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                           navigator.maxTouchPoints > 1;
 
-            // Add fallback for devices that don't match user agent detection
-            const isLikelyMobile = window.innerWidth < 800 || window.innerHeight < 600 || 
-                                 (navigator.maxTouchPoints && navigator.maxTouchPoints > 1) || 
-                                 ('ontouchstart' in window);
-            
-            console.log('Fallback mobile detection:', isLikelyMobile);
-            
-            if (isMobile || isLikelyMobile) {
-                // Update device indicator
-                const deviceIndicator = document.getElementById('device-type');
-                if (deviceIndicator) {
-                    deviceIndicator.innerHTML = `
-                        📱 Mobile Device Detected<br>
-                        UA: ${navigator.userAgent.substring(0, 40)}...<br>
-                        Screen: ${window.innerWidth}x${window.innerHeight}<br>
-                        Touch: ${navigator.maxTouchPoints > 0 ? 'YES' : 'NO'}
-                    `;
-                }
-                
-                // Show alert with device info for debugging
-                setTimeout(() => {
-                    alert(`📱 Device Detection:\n\nUser Agent: ${navigator.userAgent.substring(0, 80)}...\nPlatform: ${navigator.platform}\nMobile: ${isMobile}\niOS: ${isIOSDevice}\nFallback: ${isLikelyMobile}\nScreen: ${window.innerWidth}x${window.innerHeight}`);
-                }, 500);
-                
-                // For mobile devices, try to open the app using Universal Links / App Links
-                // Try immediately - no delay needed
+            if (isMobile) {
+                // For mobile devices, redirect to the app using custom URL scheme
                 window.location.href = `com.openlibrary.reader://oauth2/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
-                
-                // Set up a fallback timer in case Universal Links don't work
-                const fallbackTimer = setTimeout(() => {
-                    // Check if we're still on this page (Universal Link didn't work)
-                    if (window.location.href.includes('oauth-redirect.html')) {
-                        document.getElementById('status').style.display = 'none';
-                        document.getElementById('mobile-instructions').style.display = 'block';
-                        document.getElementById('manual-button').style.display = 'block';
-                    }
-                }, 800); // Faster fallback
-                
-                // Also try a secondary method using window.location.replace
+
+                // Show fallback instructions if redirect doesn't work
                 setTimeout(() => {
-                    if (window.location.href.includes('oauth-redirect.html')) {
-                        window.location.replace(`com.openlibrary.reader://oauth2/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
-                    }
-                }, 200);
+                    document.getElementById('status').style.display = 'none';
+                    document.getElementById('mobile-instructions').style.display = 'block';
+                    document.getElementById('manual-button').style.display = 'block';
+                }, 1000);
             } else {
-                // For desktop users, show instructions
+                // For desktop users, show instructions to manually copy the code
                 setTimeout(() => {
                     document.getElementById('status').style.display = 'none';
                     document.getElementById('desktop-instructions').style.display = 'block';

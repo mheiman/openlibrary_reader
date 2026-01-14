@@ -2,9 +2,9 @@ import 'local_config.dart';
 
 class ApiConstants {
   // Base URLs
-//  static const String openLibraryBaseUrl = 'https://openlibrary.org';
+  static const String openLibraryBaseUrl = 'https://openlibrary.org';
   static const String archiveOrgBaseUrl = 'https://archive.org';
-  static const String openLibraryBaseUrl = 'http://192.168.1.9:8080';
+//  static const String openLibraryBaseUrl = 'http://192.168.1.9:8080';
 
 
   // Open Library Endpoints
@@ -30,8 +30,8 @@ class ApiConstants {
   static const String oauthTokenToCookiePath = '/oauth2/token-to-cookie';
   
   // OAuth2 Configuration
-  static const String oauthClientId = 'mobile_app';
-  static const String oauthClientSecret = 'mobile_app_secret';
+  static const String oauthClientId = String.fromEnvironment('OAUTH_CLIENT_ID', defaultValue: LocalConfig.oauthClientId);
+  static const String oauthClientSecret = String.fromEnvironment('OAUTH_CLIENT_SECRET', defaultValue: LocalConfig.oauthClientSecret);
 
   // OAuth Redirect URI - automatically uses GitHub Pages based on repository
   // Values come from local_config.dart (git-ignored) or can be overridden with --dart-define

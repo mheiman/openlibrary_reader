@@ -21,6 +21,10 @@ class LocalConfig {
   static const String githubUsername = 'YOUR_GITHUB_USERNAME';  // Change this!
   static const String githubRepo = 'openlibrary_reader';        // Or your repo name
   static const String? customOAuthRedirectUri = null;           // Usually leave as null
+
+  // OAuth client credentials - keep these private!
+  static const String oauthClientId = 'YOUR_OAUTH_CLIENT_ID';
+  static const String oauthClientSecret = 'YOUR_OAUTH_CLIENT_SECRET';
 }
 ```
 
@@ -44,7 +48,13 @@ flutter build apk
 Override your local config with command-line arguments:
 
 ```bash
+# Override GitHub username/repo
 flutter build apk --dart-define=GITHUB_USERNAME=other_user
+
+# Override OAuth credentials
+flutter build apk \
+  --dart-define=OAUTH_CLIENT_ID=your_client_id \
+  --dart-define=OAUTH_CLIENT_SECRET=your_client_secret
 ```
 
 ### 3. Custom OAuth Redirect URI
@@ -65,9 +75,15 @@ flutter build apk --dart-define=OAUTH_REDIRECT_URI=https://your-domain.com/oauth
 
 Since `local_config.dart` is git-ignored, you need to provide config for CI/CD.
 
-Add repository variables (Settings → Secrets and variables → Actions):
+Add repository variables/secrets (Settings → Secrets and variables → Actions):
+
+**Variables** (non-sensitive):
 - `GITHUB_USERNAME`: Your GitHub username
 - `GITHUB_REPO`: Your repository name (optional if still `openlibrary_reader`)
+
+**Secrets** (sensitive):
+- `OAUTH_CLIENT_ID`: Your OAuth client ID
+- `OAUTH_CLIENT_SECRET`: Your OAuth client secret
 
 Then in your workflow:
 ```yaml
@@ -75,22 +91,30 @@ Then in your workflow:
   run: |
     flutter build apk \
       --dart-define=GITHUB_USERNAME=${{ vars.GITHUB_USERNAME }} \
-      --dart-define=GITHUB_REPO=${{ vars.GITHUB_REPO }}
+      --dart-define=GITHUB_REPO=${{ vars.GITHUB_REPO }} \
+      --dart-define=OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }} \
+      --dart-define=OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }}
 ```
 
-Or use the full URL:
+Or use the full redirect URL if preferred:
 ```yaml
 - name: Build APK
-  run: flutter build apk --dart-define=OAUTH_REDIRECT_URI=${{ vars.OAUTH_REDIRECT_URI }}
+  run: |
+    flutter build apk \
+      --dart-define=OAUTH_REDIRECT_URI=${{ vars.OAUTH_REDIRECT_URI }} \
+      --dart-define=OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }} \
+      --dart-define=OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }}
 ```
 
 ## Verifying Configuration
 
-You can verify the redirect URI is configured correctly by checking the logs when initiating OAuth login. Look for:
+You can verify your OAuth configuration is correct by checking the logs when initiating OAuth login. Look for:
 
 ```
-🔑 [OAuth] OAuth parameters: {...redirect_uri=YOUR_URL...}
+🔑 [OAuth] OAuth parameters: {...redirect_uri=YOUR_URL...client_id=YOUR_CLIENT_ID...}
 ```
+
+Note: The client_secret is not logged for security reasons.
 
 ## GitHub Pages Setup
 

@@ -1,0 +1,24 @@
+/// Local configuration for OAuth and other personal settings
+///
+/// Copy this file to local_config.dart and update with your values:
+/// cp lib/core/network/local_config.dart.template lib/core/network/local_config.dart
+///
+/// This file should NOT be committed to version control.
+
+class LocalConfig {
+  /// Your GitHub username for GitHub Pages hosting
+  /// Used to construct the OAuth redirect URI: https://YOUR_USERNAME.github.io/REPO_NAME/oauth-redirect.html
+  static const String githubUsername = 'YOUR_GITHUB_USERNAME';
+
+  /// Your repository name (usually 'openlibrary_reader' unless you renamed it)
+  static const String githubRepo = 'openlibrary_reader';
+
+  /// Optional: Override the entire OAuth redirect URI if using custom hosting
+  /// Leave as null to use the GitHub Pages URL constructed from username and repo
+  static const String? customOAuthRedirectUri = null;
+
+  /// OAuth client credentials
+  /// These should be kept private and not committed to public repositories
+  static const String oauthClientId = 'YOUR_OAUTH_CLIENT_ID';
+  static const String oauthClientSecret = 'YOUR_OAUTH_CLIENT_SECRET';
+}

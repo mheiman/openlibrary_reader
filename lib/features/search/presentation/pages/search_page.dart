@@ -145,18 +145,19 @@ class _SearchPageState extends State<SearchPage> {
         final books = state.result.works
             .where((work) => !existingWorkIds.contains(work.workId))
             .map((work) {
-          return Book(
-            editionId: work.lendingEdition ?? '',
-            workId: work.workId,
-            title: work.title,
-            authors: work.authors,
-            coverImageId: work.coverImageId != null
-                ? int.tryParse(work.coverImageId!)
-                : null,
-            publishDate: work.firstPublishYear?.toString(),
-            availability: work.availability,
-          );
-        }).toList();
+              return Book(
+                editionId: work.lendingEdition ?? '',
+                workId: work.workId,
+                title: work.title,
+                authors: work.authors,
+                coverImageId: work.coverImageId != null
+                    ? int.tryParse(work.coverImageId!)
+                    : null,
+                publishDate: work.firstPublishYear?.toString(),
+                availability: work.availability,
+              );
+            })
+            .toList();
         _openLibraryBooks = _sortBooks(books);
 
         // Only auto-scroll for the first page
@@ -390,8 +391,11 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   /// Sort books list based on current sort settings
-  List<Book> _sortBooks(List<Book> books,
-      {SearchSortOrder? sortOrder, bool? ascending}) {
+  List<Book> _sortBooks(
+    List<Book> books, {
+    SearchSortOrder? sortOrder,
+    bool? ascending,
+  }) {
     final booksCopy = List<Book>.from(books);
     final actualSortOrder = sortOrder ?? _getCurrentSortOrder();
     final actualAscending = ascending ?? _getCurrentSortAscending();
@@ -407,10 +411,12 @@ class _SearchPageState extends State<SearchPage> {
         break;
       case SearchSortOrder.author:
         comparator = (a, b) {
-          final authorA =
-              a.authors.isNotEmpty ? a.authors.first.toLowerCase() : '';
-          final authorB =
-              b.authors.isNotEmpty ? b.authors.first.toLowerCase() : '';
+          final authorA = a.authors.isNotEmpty
+              ? a.authors.first.toLowerCase()
+              : '';
+          final authorB = b.authors.isNotEmpty
+              ? b.authors.first.toLowerCase()
+              : '';
           return authorA.compareTo(authorB);
         };
         break;
@@ -486,10 +492,16 @@ class _SearchPageState extends State<SearchPage> {
             // Re-sort existing results with the new sort parameters
             if (mounted) {
               setState(() {
-                _localResults = _sortBooks(_localResults,
-                    sortOrder: sortOrder, ascending: ascending);
-                _openLibraryBooks = _sortBooks(_openLibraryBooks,
-                    sortOrder: sortOrder, ascending: ascending);
+                _localResults = _sortBooks(
+                  _localResults,
+                  sortOrder: sortOrder,
+                  ascending: ascending,
+                );
+                _openLibraryBooks = _sortBooks(
+                  _openLibraryBooks,
+                  sortOrder: sortOrder,
+                  ascending: ascending,
+                );
               });
             }
           }
@@ -529,76 +541,101 @@ class _SearchPageState extends State<SearchPage> {
           // Search field and button
           Container(
             decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainer),
+              color: Theme.of(context).colorScheme.surfaceContainer,
+            ),
             padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 75,
-                  child: DropdownButton<SearchFilter>(
-                    value: _searchFilter,
-                    isExpanded: true,
-                    underline: const SizedBox.shrink(),
-                    items: SearchFilter.values.map((filter) {
-                      return DropdownMenuItem(
-                        value: filter,
-                        alignment: Alignment.centerRight,
-                        child: Text(filter.label),
-                      );
-                    }).toList(),
-                    onChanged: (SearchFilter? newFilter) {
-                      if (newFilter != null) {
-                        setState(() {
-                          _searchFilter = newFilter;
-                        });
-                        // Re-run local search with new filter
-                        _onSearchTextChanged();
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onTertiaryContainer),
-                    decoration: InputDecoration(
-                      hintText: 'Search for books...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+            width: double.infinity,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Flex(
+                  direction: Axis.horizontal,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 75,
+                      child: DropdownButton<SearchFilter>(
+                        value: _searchFilter,
+                        isExpanded: true,
+                        underline: const SizedBox.shrink(),
+                        items: SearchFilter.values.map((filter) {
+                          return DropdownMenuItem(
+                            value: filter,
+                            alignment: Alignment.centerRight,
+                            child: Text(filter.label),
+                          );
+                        }).toList(),
+                        onChanged: (SearchFilter? newFilter) {
+                          if (newFilter != null) {
+                            setState(() {
+                              _searchFilter = newFilter;
+                            });
+                            _onSearchTextChanged();
+                          }
+                        },
                       ),
-                      filled: true,
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {
-                                  _showOpenLibraryResults = false;
-                                });
-                                _searchNotifier.clearSearch();
-                              },
-                            )
-                          : null,
                     ),
-                    autocorrect: false,
-                    enableSuggestions: false,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _performOpenLibrarySearch(),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _searchController.text.trim().isEmpty
-                      ? null
-                      : _performOpenLibrarySearch,
-                  child: const Text('Search OpenLibrary'),
-                ),
-              ],
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onTertiaryContainer,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search for books...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _showOpenLibraryResults = false;
+                                    });
+                                    _searchNotifier.clearSearch();
+                                  },
+                                )
+                              : null,
+                        ),
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) => _performOpenLibrarySearch(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Show icon-only button on small screens, text button on larger screens
+                    if (constraints.maxWidth < 450)
+                      ElevatedButton(
+                        onPressed: _searchController.text.trim().isEmpty
+                            ? null
+                            : _performOpenLibrarySearch,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(12),
+                          minimumSize: const Size(48, 48),
+                        ),
+                        child: const Icon(Icons.search),
+                      )
+                    else
+                      ElevatedButton(
+                        onPressed: _searchController.text.trim().isEmpty
+                            ? null
+                            : _performOpenLibrarySearch,
+                        child: const Text('Search OpenLibrary'),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
+
           const SizedBox(height: 16),
           // Results
           Expanded(
@@ -675,20 +712,17 @@ class _SearchPageState extends State<SearchPage> {
                         gridDelegate: BookGridConfig.createGridDelegate(
                           coverWidth: _coverWidth,
                         ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final book = _openLibraryBooks[index];
-                            return BookCover(
-                              key: ValueKey(book.workId),
-                              book: book,
-                              currentShelfKey: '',
-                              coverWidth: _coverWidth,
-                              showChangeEdition: false,
-                              showRelatedTitles: false,
-                            );
-                          },
-                          childCount: _openLibraryBooks.length,
-                        ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final book = _openLibraryBooks[index];
+                          return BookCover(
+                            key: ValueKey(book.workId),
+                            book: book,
+                            currentShelfKey: '',
+                            coverWidth: _coverWidth,
+                            showChangeEdition: false,
+                            showRelatedTitles: false,
+                          );
+                        }, childCount: _openLibraryBooks.length),
                       ),
                     ),
 
@@ -754,10 +788,7 @@ class _SearchPageState extends State<SearchPage> {
               padding: const EdgeInsets.all(32.0),
               child: Text(
                 'No results found',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
             ),
           ),
@@ -772,10 +803,7 @@ class _SearchPageState extends State<SearchPage> {
               padding: const EdgeInsets.all(32.0),
               child: Text(
                 'End of search results',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
             ),
           ),
@@ -783,8 +811,6 @@ class _SearchPageState extends State<SearchPage> {
       }
     }
 
-    return const SliverToBoxAdapter(
-      child: SizedBox.shrink(),
-    );
+    return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 }

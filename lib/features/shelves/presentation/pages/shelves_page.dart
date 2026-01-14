@@ -21,7 +21,10 @@ class ShelvesPage extends StatefulWidget {
 }
 
 class _ShelvesPageState extends State<ShelvesPage>
-    with TickerProviderStateMixin, WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
+    with
+        TickerProviderStateMixin,
+        WidgetsBindingObserver,
+        AutomaticKeepAliveClientMixin {
   late final ShelvesNotifier _shelvesNotifier;
   late final SettingsNotifier _settingsNotifier;
   TabController? _tabController;
@@ -235,20 +238,20 @@ class _ShelvesPageState extends State<ShelvesPage>
     final state = _shelvesNotifier.state;
     final settingsState = _settingsNotifier.state;
 
-    if (state is ShelvesLoaded && settingsState is SettingsLoaded && _tabController != null) {
+    if (state is ShelvesLoaded &&
+        settingsState is SettingsLoaded &&
+        _tabController != null) {
       final shelves = state.visibleShelves;
       final showLists = settingsState.settings.showLists;
 
       return PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Material(
-          color: Theme
-              .of(context)
-              .colorScheme
-              .surfaceContainerHigh,
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
           child: TabBar(
             indicatorSize: TabBarIndicatorSize.tab,
             isScrollable: false,
+            labelPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 4),
             tabAlignment: TabAlignment.fill,
             controller: _tabController,
             tabs: [
@@ -262,34 +265,51 @@ class _ShelvesPageState extends State<ShelvesPage>
     return null;
   }
 
-
-
-
   Widget _buildTab(Shelf shelf) {
     return Tab(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Wrap(
+        spacing: 5,
+        alignment: WrapAlignment.center,
+        runAlignment: WrapAlignment.center,
         children: [
-          Text('${shelf.name} (${shelf.bookCount})'),
-          IconButton(
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.sort, size: 20),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => ShelfSortDialog(
-                  shelf: shelf,
-                  onSortChanged: (sortOrder, ascending) {
-                    _shelvesNotifier.updateSort(
-                      shelf.key,
-                      sortOrder,
-                      ascending,
-                    );
-                  },
+          Text(
+            shelf.name,
+            maxLines: 3,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            softWrap: true,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            spacing: 7,
+            children: [
+              Text('(${shelf.bookCount})'),
+              IconButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => ShelfSortDialog(
+                      shelf: shelf,
+                      onSortChanged: (sortOrder, ascending) {
+                        _shelvesNotifier.updateSort(
+                          shelf.key,
+                          sortOrder,
+                          ascending,
+                        );
+                      },
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.sort, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                visualDensity: VisualDensity.compact,
+                style: const ButtonStyle(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-              );
-            },
+              ),
+            ],
           ),
         ],
       ),
@@ -298,7 +318,10 @@ class _ShelvesPageState extends State<ShelvesPage>
 
   Widget _buildListsTab(int listCount) {
     return Tab(
-      child: Text('Lists ($listCount)'),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text('Lists ($listCount)'),
+      ),
     );
   }
 
@@ -309,9 +332,7 @@ class _ShelvesPageState extends State<ShelvesPage>
         final state = _shelvesNotifier.state;
 
         if (state is ShelvesLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         } else if (state is ShelvesError) {
           return Center(
             child: Column(
@@ -345,19 +366,20 @@ class _ShelvesPageState extends State<ShelvesPage>
         } else if (state is ShelvesLoaded) {
           final shelves = state.visibleShelves;
           final settingsState = _settingsNotifier.state;
-          final showLists = settingsState is SettingsLoaded && settingsState.settings.showLists;
+          final showLists =
+              settingsState is SettingsLoaded &&
+              settingsState.settings.showLists;
 
           if (shelves.isEmpty && (!showLists || state.bookLists.isEmpty)) {
-            return const Center(
-              child: Text('No shelves or lists configured'),
-            );
+            return const Center(child: Text('No shelves or lists configured'));
           }
 
           // Calculate expected tab count
           final expectedTabCount = shelves.length + (showLists ? 1 : 0);
 
           // Ensure tab controller exists and has correct length
-          if (_tabController == null || _tabController!.length != expectedTabCount) {
+          if (_tabController == null ||
+              _tabController!.length != expectedTabCount) {
             // Update tab controller to match current state
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
@@ -389,9 +411,7 @@ class _ShelvesPageState extends State<ShelvesPage>
           );
         }
 
-        return const Center(
-          child: Text('Welcome to OL Reader'),
-        );
+        return const Center(child: Text('Welcome to OL Reader'));
       },
     );
   }

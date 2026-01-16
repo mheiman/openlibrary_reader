@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/theme/o_l_reader_icons.dart';
-import '../../../../core/widgets/dialog_header.dart';
 import '../../../book_details/data/datasources/book_details_remote_data_source.dart';
 import '../../../book_details/domain/entities/edition.dart';
 import '../../../book_details/domain/usecases/get_editions.dart';
@@ -19,7 +18,9 @@ import '../../../settings/presentation/state/settings_state.dart';
 import '../../domain/entities/book.dart';
 import '../state/shelves_notifier.dart';
 import '../state/shelves_state.dart';
+import 'add_to_list_dialog.dart';
 import 'grid_item_card.dart';
+import 'remove_from_list_dialog.dart';
 
 /// Widget to display a book cover
 class BookCover extends StatefulWidget {
@@ -820,37 +821,7 @@ class _BookCoverState extends State<BookCover> {
 
     final selectedList = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return Dialog(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const DialogHeader(title: 'Add to List'),
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: state.bookLists.length,
-                    itemBuilder: (context, index) {
-                      final bookList = state.bookLists[index];
-                      return ListTile(
-                        minVerticalPadding: 5,
-                        tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                        textColor: Theme.of(context).colorScheme.onSurface,
-                        title: Text('${bookList.name} (${bookList.seedCount} items)'),
-                        onTap: () => Navigator.of(context).pop(bookList.url),
-                      );
-                    },
-                    separatorBuilder: (context, index) => const SizedBox(height: 8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (context) => AddToListDialog(bookLists: state.bookLists),
     );
 
     if (selectedList == null) return;
@@ -912,40 +883,10 @@ class _BookCoverState extends State<BookCover> {
     // Confirm removal
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return Dialog(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const DialogHeader(title: 'Remove from List'),
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text('Remove "${widget.book.title}" from "$listName"?'),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Cancel'),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text('Remove'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-      },
+      builder: (context) => RemoveFromListDialog(
+        bookTitle: widget.book.title,
+        listName: listName,
+      ),
     );
 
     if (confirmed != true) return;

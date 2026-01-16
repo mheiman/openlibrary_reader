@@ -1,41 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Material 3 role-based theme for OL Reader
-///
-/// Uses two primary colors:
-/// - Dark (0xFF2E1E0F) for AppBar and primary actions
-/// - Light (0xFFE1DCC5) for TabBar and surface backgrounds
 class AppTheme {
-  // Brand colors
-  static const Color _appBarDark = Color(0xFF2E1E0F);
-  static const Color _scaffold = Color(0xFF333333);
-  static const Color _surfaceLightest = const Color(0xFFF8F6EA);
-  static const Color _surfaceLight = Color(0xFFE1DCC5);
-  static const Color _surfaceMedium = Color(0xFFB6AB9C);
-  static const Color _surfaceDark = Color(0xFF8D775F);
-  static const Color _surfaceDarkest = Color(0xFF6C5B49);
-  static const Color _highlight = Color(0xFF3494F1);
-
   static final BorderRadius _buttonBorderRadius = BorderRadius.circular(8);
 
-  // Light theme - Material 3 role-based
-/*
-  static final ColorScheme lightColorScheme = ColorScheme.fromSeed(
-    seedColor: _appBarDark,
-    primary: _appBarDark,
-    brightness: Brightness.light,
-    surface: _surfaceLight,
-    surfaceContainerLowest: _surfaceDark,
-    surfaceContainerLow: _surfaceMedium,
-    surfaceContainer: _surfaceLight,
-    surfaceContainerHigh: _surfaceLight,
-    surfaceContainerHighest: _surfaceLightest,
-    onSurface: Colors.black,
-    onSurfaceVariant: Colors.black26,
-    //onPrimaryContainer: Colors.black87,
-  );
-*/
   static final ColorScheme lightColorScheme = ColorScheme(
     primary: Color(0xFF2E260F),
     onPrimary: Color(0xFFffffff),
@@ -60,7 +28,6 @@ class AppTheme {
     colorScheme: lightColorScheme,
     scaffoldBackgroundColor: lightColorScheme.inverseSurface,
 
-    // AppBar colors are hard-coded so other elements can use Material 3 roles
     appBarTheme: AppBarTheme(
       backgroundColor: lightColorScheme.primary,
       foregroundColor: Colors.white,
@@ -92,37 +59,7 @@ class AppTheme {
         ),
       ),
     ),
-/*
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: _appBarDark,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: _buttonBorderRadius,
-        ),
-      ),
-    ),
 
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: _appBarDark,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-    ),
-
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: _appBarDark,
-        side: const BorderSide(color: _appBarDark),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: _buttonBorderRadius,
-        ),
-      ),
-    ),
-
-*/
     dialogTheme: DialogThemeData(
       backgroundColor: lightColorScheme.surface,
     ),
@@ -204,7 +141,6 @@ class AppTheme {
     ).apply(
       fontFamily: 'Roboto-Regular',
     ),
-
 
   );
 

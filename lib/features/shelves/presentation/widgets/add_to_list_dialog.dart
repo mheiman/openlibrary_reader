@@ -30,7 +30,7 @@ class AddToListDialog extends StatelessWidget {
                   final bookList = bookLists[index];
                   return ListTile(
                     minVerticalPadding: 5,
-                    tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                    tileColor: Theme.of(context).colorScheme.surfaceContainer,
                     textColor: Theme.of(context).colorScheme.onSurface,
                     title: Text('${bookList.name} (${bookList.seedCount} items)'),
                     onTap: () => Navigator.of(context).pop(bookList.url),

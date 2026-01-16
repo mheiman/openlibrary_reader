@@ -184,13 +184,13 @@ class AppTheme {
       ),
     ),
 
-    textTheme: const TextTheme(
+    textTheme: TextTheme(
       // Display styles - largest text
       displayLarge: TextStyle(fontSize: 57, fontWeight: FontWeight.w400),
       displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400),
       displaySmall: TextStyle(fontSize: 36, fontWeight: FontWeight.w400),
 
-      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: lightColorScheme.onPrimary),
 
       // Body styles - main content
       bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
@@ -212,12 +212,14 @@ class AppTheme {
   // Dark theme - Material 3 role-based
   // Defined as extensions to the light theme to minimize duplication
   static final darkColorScheme = lightColorScheme.copyWith(
-    secondary: Color(0xFF655E51),
-    onSecondary: Color(0xFFffffff),
+    onPrimary: Color(0xFFeeeeee),
+    secondary: Color(0xFF766254),
+    onSecondary: Color(0xFFeeeeee),
+    secondaryContainer: Color(0xFFACA496),
     surface: Color(0xFF655E51),
     onSurface: Color(0xFFEEEBDF),
-    onSurfaceVariant: Color(0xFFA9A09A),
-    surfaceContainer: Color(0xFFA9A09A),
+    onSurfaceVariant: Color(0xFF938978),
+    surfaceContainer: Color(0xFFACA496),
   );
 
   static final ThemeData darkTheme = lightTheme.copyWith(
@@ -258,22 +260,17 @@ class AppTheme {
       color: darkColorScheme.onSurfaceVariant,
     ),
 
-    snackBarTheme: lightTheme.snackBarTheme.copyWith(
-      backgroundColor: darkColorScheme.primary,
-      contentTextStyle: TextStyle(
-        color: darkColorScheme.onPrimary,
-      ),
-      actionTextColor: darkColorScheme.tertiary,
-    ),
-
     dialogTheme: lightTheme.dialogTheme.copyWith(
       backgroundColor: darkColorScheme.surface,
     ),
 
-    textTheme: lightTheme.textTheme.apply(
-      bodyColor: Colors.white,    // Default text color for body text
-      displayColor: Colors.white, // Default color for large/display text
-      fontFamily: 'Roboto-Regular',
+    textTheme: lightTheme.textTheme.copyWith(
+      titleLarge: lightTheme.textTheme.titleLarge?.copyWith(
+        color: darkColorScheme.onPrimary,
+      ),
+    ).apply(
+      bodyColor: darkColorScheme.onPrimary,
+      displayColor: darkColorScheme.onPrimary,
     ),
   );
 

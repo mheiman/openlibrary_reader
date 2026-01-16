@@ -541,7 +541,7 @@ class _SearchPageState extends State<SearchPage> {
           // Search field and button
           Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainer,
+              color: Theme.of(context).colorScheme.surface,
             ),
             padding: const EdgeInsets.all(16),
             width: double.infinity,
@@ -580,9 +580,7 @@ class _SearchPageState extends State<SearchPage> {
                         controller: _searchController,
                         focusNode: _searchFocusNode,
                         style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onTertiaryContainer,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Search for books...',

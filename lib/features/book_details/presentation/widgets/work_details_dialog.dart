@@ -157,7 +157,7 @@ class _WorkDetailsDialogState extends State<WorkDetailsDialog> {
             top: -5,
             child: IconButton(
               icon: const Icon(Icons.close),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               tooltip: 'Close',
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -177,11 +177,7 @@ class _WorkDetailsDialogState extends State<WorkDetailsDialog> {
         children: [
           Text(
             widget.book.title,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           if (widget.book.authors.isNotEmpty)
             Stack(
@@ -198,7 +194,7 @@ class _WorkDetailsDialogState extends State<WorkDetailsDialog> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.search, size: 20),
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               tooltip: 'Search for this author',
                               padding: EdgeInsets.zero,
                               visualDensity: VisualDensity.compact,
@@ -224,10 +220,10 @@ class _WorkDetailsDialogState extends State<WorkDetailsDialog> {
                               Flexible(
                                 child: Text(
                                   author,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     height: 1.0,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onPrimary,
                                   ),
                                 ),
                               ),
@@ -289,6 +285,11 @@ class _WorkDetailsDialogState extends State<WorkDetailsDialog> {
               child: Markdown(
                 data: _fixMarkdownLineBreaks(_description!),
                 shrinkWrap: true,
+                styleSheet: MarkdownStyleSheet(
+                  blockquoteDecoration: const BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                ),
                 onTapLink: (text, href, title) {
                   if (href != null) {
                     launchUrl(Uri.parse(href));

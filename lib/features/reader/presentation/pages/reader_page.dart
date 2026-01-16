@@ -61,6 +61,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   /// Track which domain is currently causing delays
   String _currentLoadingDomain = 'openlibrary.org';
 
+  /// Track if loan expired dialog is currently showing
+  bool _isLoanExpiredDialogShowing = false;
+
   @override
   void initState() {
     super.initState();
@@ -152,7 +155,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   }
 
   void _showLoanExpiredDialog() {
-    if (!mounted) return;
+    if (!mounted || _isLoanExpiredDialogShowing) return;
+
+    _isLoanExpiredDialogShowing = true;
 
     showDialog(
       context: context,
@@ -164,6 +169,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           OutlinedButton(
             onPressed: () async {
               Navigator.of(context).pop();
+              _isLoanExpiredDialogShowing = false;
               // Reload the book to get a fresh checkout
               await _reloadReader();
             },
@@ -172,6 +178,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           OutlinedButton(
             onPressed: () {
               Navigator.of(context).pop();
+              _isLoanExpiredDialogShowing = false;
               // Return to previous screen
               context.goBack();
             },

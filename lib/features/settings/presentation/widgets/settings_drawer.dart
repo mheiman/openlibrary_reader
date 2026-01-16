@@ -89,13 +89,9 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                 Container(
                   color: Theme.of(context).colorScheme.primary,
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  child: const Text(
+                  child: Text(
                     'Options',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleLarge
                   ),
                 ),
 

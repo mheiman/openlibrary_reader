@@ -1,5 +1,5 @@
 name: openlibrary_reader
-description: "OpenLibrary Reader - Clean Architecture"
+description: "A Book Reader for Open Library"
 publish_to: 'none'
 
 version: 2.0.0+1
@@ -94,9 +94,11 @@ flutter:
         - asset: fonts/OLReaderIcons.ttf
     - family: Roboto-Regular
       fonts:
-        - asset: fonts/Roboto-Medium.ttf
+        - asset: fonts/Roboto-Regular.ttf
         - asset: fonts/Roboto-Italic.ttf
           style: italic
+        - asset: fonts/Roboto-Medium.ttf
+          weight: 500
         - asset: fonts/Roboto-SemiBold.ttf
           weight: 600
 

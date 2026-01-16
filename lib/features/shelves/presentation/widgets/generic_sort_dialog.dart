@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/dialog_header.dart';
+
 /// Generic sort option model
 class GenericSortOption<T> {
   bool isSelected;
@@ -45,57 +47,49 @@ class _GenericSortDialogState<T> extends State<GenericSortDialog<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(widget.title),
-          IconButton(
-            icon: const Icon(Icons.close, size: 24),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            visualDensity: VisualDensity.compact,
-            splashRadius: 20,
-          ),
-        ],
-      ),
-      content: SizedBox(
+    return Dialog(
+      child: SizedBox(
         width: 275.0,
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: sortOptions.length,
-          itemBuilder: (context, index) {
-            return InkWell(
-              splashColor: Colors.blueAccent,
-              onTap: () {
-                setState(() {
-                  // If tapping the currently selected option, toggle direction
-                  if (sortOptions[index].isSelected) {
-                    ascending = !ascending;
-                  } else {
-                    // Clear all selections and select this one
-                    for (var option in sortOptions) {
-                      option.isSelected = false;
-                    }
-                    sortOptions[index].isSelected = true;
-                    // Default to ascending for new selection
-                    ascending = true;
-                  }
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DialogHeader(title: widget.title),
+            ListView.builder(
+              shrinkWrap: true,
+              itemCount: sortOptions.length,
+              itemBuilder: (context, index) {
+                return InkWell(
+                  splashColor: Colors.blueAccent,
+                  onTap: () {
+                    setState(() {
+                      // If tapping the currently selected option, toggle direction
+                      if (sortOptions[index].isSelected) {
+                        ascending = !ascending;
+                      } else {
+                        // Clear all selections and select this one
+                        for (var option in sortOptions) {
+                          option.isSelected = false;
+                        }
+                        sortOptions[index].isSelected = true;
+                        // Default to ascending for new selection
+                        ascending = true;
+                      }
 
-                  // Notify parent
-                  widget.onSortChanged(
-                    sortOptions[index].sortValue,
-                    ascending,
-                  );
-                });
+                      // Notify parent
+                      widget.onSortChanged(
+                        sortOptions[index].sortValue,
+                        ascending,
+                      );
+                    });
+                  },
+                  child: _GenericSortOptionItem<T>(
+                    option: sortOptions[index],
+                    ascending: ascending,
+                  ),
+                );
               },
-              child: _GenericSortOptionItem<T>(
-                option: sortOptions[index],
-                ascending: ascending,
-              ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );

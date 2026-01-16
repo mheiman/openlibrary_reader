@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/dialog_header.dart';
 import '../../domain/entities/edition.dart';
 
 /// Dialog for selecting a book edition
@@ -29,87 +30,43 @@ class _EditionPickerDialogState extends State<EditionPickerDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       alignment: Alignment.topCenter,
-      child: Stack(
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header with explanation
-              _buildHeader(context),
-
-              // Edition list with loading state
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                alignment: Alignment.topCenter,
-                curve: Curves.easeInOut,
-                child: SizedBox(
-                  width: 400,
-                  child: FutureBuilder<List<Edition>>(
-                    future: widget.editionsFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return _buildLoadingState();
-                      } else if (snapshot.hasError) {
-                        return _buildErrorState(snapshot.error.toString());
-                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return _buildNoEditionsMessage();
-                      } else {
-                        final editions = snapshot.data!;
-                        return editions.length == 1
-                            ? _buildSingleEditionMessage()
-                            : _buildEditionList(editions);
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Close button
-          Positioned(
-            right: -10,
-            top: -10,
-            child: IconButton(
-              icon: const Icon(Icons.close),
-              color: Colors.white54,
-              tooltip: 'Close',
-              onPressed: () => Navigator.of(context).pop(),
+      child: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header with explanation
+            const DialogHeader(
+              title: 'Change Edition',
+              subtitle: 'Open Library books are often available in multiple editions. '
+                  'If more than one is available, you can change the edition that you have on your shelf (highlighted below).',
             ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            offset: Offset(1.0, 1.0),
-            blurRadius: 5.0,
-            spreadRadius: 2.0,
-          ),
-        ],
-      ),
-      width: 400,
-      padding: const EdgeInsets.all(20.0),
-      child: const Column(
-        children: [
-          Text(
-            'Change Edition',
-            style: TextStyle(fontSize: 20, color: Colors.white),
-          ),
-          SizedBox(height: 15),
-          Text(
-            'Open Library books are often available in multiple editions. '
-            'If more than one is available, you can change the edition that you have on your shelf (highlighted below).',
-            style: TextStyle(color: Colors.white),
-          ),
-        ],
+            // Edition list with loading state
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              alignment: Alignment.topCenter,
+              curve: Curves.easeInOut,
+              child: FutureBuilder<List<Edition>>(
+                future: widget.editionsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildLoadingState();
+                  } else if (snapshot.hasError) {
+                    return _buildErrorState(snapshot.error.toString());
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return _buildNoEditionsMessage();
+                  } else {
+                    final editions = snapshot.data!;
+                    return editions.length == 1
+                        ? _buildSingleEditionMessage()
+                        : _buildEditionList(editions);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -117,8 +74,8 @@ class _EditionPickerDialogState extends State<EditionPickerDialog> {
   Widget _buildLoadingState() {
     return Container(
       padding: const EdgeInsets.all(40.0),
-      child: const Center(
-        child: CircularProgressIndicator(),
+      child: Center(
+        child: CircularProgressIndicator(color: Theme.of(context).colorScheme.tertiary),
       ),
     );
   }
@@ -129,7 +86,7 @@ class _EditionPickerDialogState extends State<EditionPickerDialog> {
       child: Text(
         'Failed to load editions: $error',
         textAlign: TextAlign.center,
-        style: const TextStyle(color: Colors.red),
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
     );
   }
@@ -146,17 +103,36 @@ class _EditionPickerDialogState extends State<EditionPickerDialog> {
   }
 
   Widget _buildEditionList(List<Edition> editions) {
+    // Sort editions by publication date ascending (oldest first)
+    final sortedEditions = List<Edition>.from(editions)..sort((a, b) {
+      // Handle null publish dates - put them at the end
+      if (a.publishDate == null && b.publishDate == null) return 0;
+      if (a.publishDate == null) return 1;
+      if (b.publishDate == null) return -1;
+
+      // Try to parse as integers (for years like "2020", "2019")
+      final aYear = int.tryParse(a.publishDate!);
+      final bYear = int.tryParse(b.publishDate!);
+
+      if (aYear != null && bYear != null) {
+        return aYear.compareTo(bYear);
+      }
+
+      // Fallback to string comparison for dates like "January 1, 2020"
+      return a.publishDate!.compareTo(b.publishDate!);
+    });
+
     return ListView.separated(
       shrinkWrap: true,
-      itemCount: editions.length,
+      itemCount: sortedEditions.length,
       itemBuilder: (context, index) {
-        final edition = editions[index];
+        final edition = sortedEditions[index];
         final isSelected = edition.editionId == widget.currentEditionId;
         final isChanging = _changingToEditionId == edition.editionId;
 
         return Container(
           color: isSelected
-              ? Theme.of(context).highlightColor.withValues(alpha: 0.3)
+              ? Theme.of(context).colorScheme.surfaceContainer
               : null,
           child: ListTile(
             contentPadding: const EdgeInsets.fromLTRB(25, 5.0, 15, 5),
@@ -193,7 +169,7 @@ class _EditionPickerDialogState extends State<EditionPickerDialog> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             trailing: isSelected

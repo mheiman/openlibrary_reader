@@ -81,29 +81,30 @@ class _ShelvesPageState extends State<ShelvesPage>
   }
 
   void _onShelvesStateChanged() {
-    if (mounted) {
-      // Handle refresh animation separately to avoid issues
-      final state = _shelvesNotifier.state;
-      if (state is ShelvesLoaded && state.isRefreshing) {
-        if (!_refreshAnimationController.isAnimating) {
-          _refreshAnimationController.repeat();
-        }
-      } else {
-        _refreshAnimationController.stop();
-        _refreshAnimationController.reset();
-      }
+    if (!mounted) return;
 
-      // Update tab controller synchronously before rebuild to avoid mismatch
-      if (state is ShelvesLoaded) {
-        _updateTabController();
-        // Schedule rebuild after controller is updated
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {}); // Trigger rebuild if needed
-          }
-        });
+    // Handle refresh animation separately to avoid issues
+    final state = _shelvesNotifier.state;
+    if (state is ShelvesLoaded && state.isRefreshing) {
+      if (!_refreshAnimationController.isAnimating) {
+        _refreshAnimationController.repeat();
       }
+    } else {
+      _refreshAnimationController.stop();
+      _refreshAnimationController.reset();
     }
+
+    // Update tab controller synchronously
+    if (state is ShelvesLoaded) {
+      _updateTabController();
+    }
+
+    // Schedule rebuild via microtask to avoid calling setState during build
+    Future.microtask(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   void _updateTabController() {
@@ -326,94 +327,91 @@ class _ShelvesPageState extends State<ShelvesPage>
   }
 
   Widget _buildBody() {
-    return ListenableBuilder(
-      listenable: _shelvesNotifier,
-      builder: (context, _) {
-        final state = _shelvesNotifier.state;
+    // Note: We don't use ListenableBuilder here because _onShelvesStateChanged
+    // already listens to the notifier and updates the tab controller BEFORE
+    // triggering a rebuild via setState(). This ensures the tab controller
+    // is always in sync when we build.
+    final state = _shelvesNotifier.state;
 
-        if (state is ShelvesLoading) {
+    if (state is ShelvesLoading) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (state is ShelvesError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64,
+                color: Theme.of(context).colorScheme.error),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading shelves',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(state.message, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  _shelvesNotifier.loadShelves(forceRefresh: true),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () =>
+                  _shelvesNotifier.loadShelves(forceRefresh: false),
+              icon: const Icon(Icons.offline_pin),
+              label: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+    } else if (state is ShelvesLoaded) {
+      final shelves = state.visibleShelves;
+      final settingsState = _settingsNotifier.state;
+      final showLists =
+          settingsState is SettingsLoaded &&
+          settingsState.settings.showLists;
+
+      if (shelves.isEmpty && (!showLists || state.bookLists.isEmpty)) {
+        return const Center(child: Text('No shelves or lists configured'));
+      }
+
+      // Calculate expected tab count
+      final expectedTabCount = shelves.length + (showLists ? 1 : 0);
+
+      // Ensure tab controller exists and matches - it should already be updated
+      // by _onShelvesStateChanged before this rebuild was triggered
+      if (_tabController == null || _tabController!.length != expectedTabCount) {
+        // Controller not ready yet, update it now
+        _updateTabController();
+        if (_tabController == null) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is ShelvesError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                 Icon(Icons.error_outline, size: 64,
-                    color: Theme.of(context).colorScheme.error),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading shelves',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(state.message),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () =>
-                      _shelvesNotifier.loadShelves(forceRefresh: true),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      _shelvesNotifier.loadShelves(forceRefresh: false),
-                  icon: const Icon(Icons.offline_pin),
-                  label: const Text('Cancel'),
-                ),
-              ],
-            ),
-          );
-        } else if (state is ShelvesLoaded) {
-          final shelves = state.visibleShelves;
-          final settingsState = _settingsNotifier.state;
-          final showLists =
-              settingsState is SettingsLoaded &&
-              settingsState.settings.showLists;
-
-          if (shelves.isEmpty && (!showLists || state.bookLists.isEmpty)) {
-            return const Center(child: Text('No shelves or lists configured'));
-          }
-
-          // Calculate expected tab count
-          final expectedTabCount = shelves.length + (showLists ? 1 : 0);
-
-          // Ensure tab controller exists and has correct length
-          if (_tabController == null ||
-              _tabController!.length != expectedTabCount) {
-            // Update tab controller to match current state
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                _updateTabController();
-              }
-            });
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              final shelfKey = _getCurrentShelfKey();
-              if (shelfKey != null) {
-                await _shelvesNotifier.refreshShelf(shelfKey);
-              }
-            },
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                ...shelves.map((shelf) {
-                  return ShelfView(
-                    shelf: shelf,
-                    onRefresh: () => _shelvesNotifier.refreshShelf(shelf.key),
-                  );
-                }),
-                if (showLists) ListsView(bookLists: state.bookLists),
-              ],
-            ),
-          );
         }
+      }
 
-        return const Center(child: Text('Welcome to OL Reader'));
-      },
-    );
+      return RefreshIndicator(
+        onRefresh: () async {
+          final shelfKey = _getCurrentShelfKey();
+          if (shelfKey != null) {
+            await _shelvesNotifier.refreshShelf(shelfKey);
+          }
+        },
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            ...shelves.map((shelf) {
+              return ShelfView(
+                shelf: shelf,
+                onRefresh: () => _shelvesNotifier.refreshShelf(shelf.key),
+              );
+            }),
+            if (showLists) ListsView(bookLists: state.bookLists),
+          ],
+        ),
+      );
+    }
+
+    return const Center(child: Text('Welcome to OL Reader'));
   }
 }

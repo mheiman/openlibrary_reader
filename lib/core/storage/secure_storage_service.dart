@@ -8,11 +8,7 @@ class SecureStorageService {
   late final FlutterSecureStorage _storage;
 
   SecureStorageService() {
-    _storage = const FlutterSecureStorage(
-      aOptions: AndroidOptions(
-        encryptedSharedPreferences: true,
-      ),
-    );
+    _storage = const FlutterSecureStorage();
   }
 
   /// Read a value from secure storage

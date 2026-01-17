@@ -23,8 +23,8 @@ class OLReaderIcons {
 
   static const IconData clock = IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData unavailable = IconData(0xe806, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData date_outline = IconData(0xe812, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData dateOutline = IconData(0xe812, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData date = IconData(0xe813, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData clock_filled_outline = IconData(0xe814, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData clock_filled = IconData(0xe815, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData clockFilledOutline = IconData(0xe814, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData clockFilled = IconData(0xe815, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

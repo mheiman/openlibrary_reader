@@ -500,8 +500,8 @@ class ShelfRemoteDataSource {
 
       // Convert to models
       final seeds = entriesData
-          .where((entry) => entry is Map<String, dynamic>)
-          .map((entry) => ListSeedModel.fromJson(entry as Map<String, dynamic>))
+          .whereType<Map<String, dynamic>>()
+          .map((entry) => ListSeedModel.fromJson(entry))
           .toList();
 
       return seeds;

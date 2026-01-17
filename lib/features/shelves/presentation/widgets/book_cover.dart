@@ -408,8 +408,8 @@ class _BookCoverState extends State<BookCover> {
       // Short loan - show clock icon with minutes
       return Stack(
         children: [
-          const Icon(OLReaderIcons.clock_filled, color: Colors.black87),
-          const Icon(OLReaderIcons.clock_filled_outline, color: Colors.white54),
+          const Icon(OLReaderIcons.clockFilled, color: Colors.black87),
+          const Icon(OLReaderIcons.clockFilledOutline, color: Colors.white54),
           SizedBox(
             height: 24,
             width: 24,
@@ -430,7 +430,7 @@ class _BookCoverState extends State<BookCover> {
     return Stack(
       children: [
         const Icon(OLReaderIcons.date, color: Colors.black87),
-        const Icon(OLReaderIcons.date_outline, color: Colors.white54),
+        const Icon(OLReaderIcons.dateOutline, color: Colors.white54),
         SizedBox(
           height: 24,
           width: 24,

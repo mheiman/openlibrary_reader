@@ -11,32 +11,27 @@ class AppException implements Exception {
 
 /// Server exception - when server returns an error
 class ServerException extends AppException {
-  const ServerException([String message = 'Server error', int? statusCode])
-      : super(message, statusCode);
+  const ServerException([super.message = 'Server error', super.statusCode]);
 }
 
 /// Network exception - connection issues
 class NetworkException extends AppException {
-  const NetworkException([String message = 'Network connection failed'])
-      : super(message);
+  const NetworkException([super.message = 'Network connection failed']);
 }
 
 /// Cache exception - local storage issues
 class CacheException extends AppException {
-  const CacheException([String message = 'Cache operation failed'])
-      : super(message);
+  const CacheException([super.message = 'Cache operation failed']);
 }
 
 /// Authentication exception
 class AuthException extends AppException {
-  const AuthException([String message = 'Authentication failed', int? statusCode])
-      : super(message, statusCode);
+  const AuthException([super.message = 'Authentication failed', super.statusCode]);
 }
 
 /// Validation exception
 class ValidationException extends AppException {
-  const ValidationException([String message = 'Validation failed'])
-      : super(message);
+  const ValidationException([super.message = 'Validation failed']);
 }
 
 /// Not found exception

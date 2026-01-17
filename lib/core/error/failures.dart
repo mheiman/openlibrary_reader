@@ -12,40 +12,40 @@ abstract class Failure extends Equatable {
 
 /// Server-related failures
 class ServerFailure extends Failure {
-  const ServerFailure([String message = 'Server error occurred']) : super(message);
+  const ServerFailure([super.message = 'Server error occurred']);
 }
 
 /// Network/Connection failures
 class NetworkFailure extends Failure {
-  const NetworkFailure([String message = 'Network error occurred']) : super(message);
+  const NetworkFailure([super.message = 'Network error occurred']);
 }
 
 /// Cache-related failures
 class CacheFailure extends Failure {
-  const CacheFailure([String message = 'Cache error occurred']) : super(message);
+  const CacheFailure([super.message = 'Cache error occurred']);
 }
 
 /// Authentication failures
 class AuthFailure extends Failure {
-  const AuthFailure([String message = 'Authentication failed']) : super(message);
+  const AuthFailure([super.message = 'Authentication failed']);
 }
 
 /// Validation failures
 class ValidationFailure extends Failure {
-  const ValidationFailure([String message = 'Validation failed']) : super(message);
+  const ValidationFailure([super.message = 'Validation failed']);
 }
 
 /// Not found failures
 class NotFoundFailure extends Failure {
-  const NotFoundFailure([String message = 'Resource not found']) : super(message);
+  const NotFoundFailure([super.message = 'Resource not found']);
 }
 
 /// Unauthorized failures
 class UnauthorizedFailure extends Failure {
-  const UnauthorizedFailure([String message = 'Unauthorized access']) : super(message);
+  const UnauthorizedFailure([super.message = 'Unauthorized access']);
 }
 
 /// Unknown/Unexpected failures
 class UnknownFailure extends Failure {
-  const UnknownFailure([String message = 'An unknown error occurred']) : super(message);
+  const UnknownFailure([super.message = 'An unknown error occurred']);
 }

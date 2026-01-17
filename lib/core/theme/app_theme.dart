@@ -114,6 +114,10 @@ class AppTheme {
       space: 1,
     ),
 
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: lightColorScheme.tertiary,
+    ),
+
     // SnackBar
     snackBarTheme: SnackBarThemeData(
       backgroundColor: lightColorScheme.primary,
@@ -139,7 +143,7 @@ class AppTheme {
       // Body styles - main content
       bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
       bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-      bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+      bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: lightColorScheme.onPrimary),
 
       // Label styles - buttons, tabs
       labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),

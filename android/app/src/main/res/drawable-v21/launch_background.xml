@@ -5,8 +5,8 @@
     </item>
     <item
         android:gravity="center"
-        android:width="200dp"
-        android:height="121dp">
+        android:width="400dp"
+        android:height="242dp">
         <bitmap android:gravity="fill" android:src="@drawable/splash"/>
     </item>
 </layer-list>

@@ -27,15 +27,10 @@ class ListFolderChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? colorScheme.surfaceContainer
-              : colorScheme.surfaceContainerHighest,
+              ? colorScheme.surface
+              : colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected
-                ? colorScheme.outline
-                : colorScheme.outline.withAlpha(80),
-            width: 1,
-          ),
+          border: Border.all(width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -68,7 +63,7 @@ class ListFolderChip extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? colorScheme.primary
-                            : colorScheme.surfaceContainer,
+                            : colorScheme.secondary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(

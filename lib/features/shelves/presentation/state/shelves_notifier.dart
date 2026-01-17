@@ -136,12 +136,6 @@ class ShelvesNotifier extends ChangeNotifier {
       return;
     }
 
-    // If force refresh and no loaded data, clear cache first to ensure no stale data
-    // This is especially important when switching between users
-    if (forceRefresh && _state is! ShelvesLoaded) {
-      await repository.clearCache();
-    }
-
     // If we already have loaded shelves, keep showing them while refreshing
     if (_state is ShelvesLoaded) {
       final currentState = _state as ShelvesLoaded;

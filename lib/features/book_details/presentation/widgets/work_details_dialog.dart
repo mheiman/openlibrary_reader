@@ -262,7 +262,7 @@ class _WorkDetailsDialogState extends State<WorkDetailsDialog> {
 
   Widget _buildContent(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(130, 10, 20, 20),
+      padding: const EdgeInsets.fromLTRB(15, 10, 15, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

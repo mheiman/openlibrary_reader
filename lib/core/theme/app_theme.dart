@@ -4,6 +4,13 @@ import 'package:flutter/services.dart';
 class AppTheme {
   static final BorderRadius _buttonBorderRadius = BorderRadius.circular(8);
 
+  /// Italic text style that uses the proper Roboto-Italic font.
+  /// Use this instead of just FontStyle.italic to avoid synthetic italics.
+  static const TextStyle italic = TextStyle(
+    fontFamily: 'Roboto',
+    fontStyle: FontStyle.italic,
+  );
+
   static final ColorScheme lightColorScheme = ColorScheme(
     primary: Color(0xFF2E260F),
     onPrimary: Color(0xFFffffff),
@@ -24,7 +31,7 @@ class AppTheme {
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    fontFamily: 'Roboto-Regular',
+    fontFamily: 'Roboto',
     colorScheme: lightColorScheme,
     scaffoldBackgroundColor: lightColorScheme.inverseSurface,
 
@@ -69,11 +76,11 @@ class AppTheme {
      titleTextStyle: TextStyle(
         fontSize: 15,
         color: lightColorScheme.onSurface,
-        fontFamily: 'Roboto-Regular',
+        fontFamily: 'Roboto',
       ),
       subtitleTextStyle: TextStyle(
         fontSize: 15,
-        fontFamily: 'Roboto-Regular',
+        fontFamily: 'Roboto',
       ),
     ),
 
@@ -139,7 +146,7 @@ class AppTheme {
       labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
     ).apply(
-      fontFamily: 'Roboto-Regular',
+      fontFamily: 'Roboto',
     ),
 
   );

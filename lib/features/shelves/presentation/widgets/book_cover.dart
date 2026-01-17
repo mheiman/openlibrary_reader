@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/services/logging_service.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/o_l_reader_icons.dart';
 import '../../../book_details/data/datasources/book_details_remote_data_source.dart';
 import '../../../book_details/domain/entities/edition.dart';
@@ -314,7 +315,7 @@ class _BookCoverState extends State<BookCover> {
                 const TextSpan(text: 'Reloaded '),
                 TextSpan(
                   text: bookTitle,
-                  style: const TextStyle(fontStyle: FontStyle.italic),
+                  style: AppTheme.italic,
                 ),
               ],
             ),
@@ -636,7 +637,7 @@ class _BookCoverState extends State<BookCover> {
                 children: [
                   TextSpan(
                     text: widget.book.title,
-                    style: const TextStyle(fontStyle: FontStyle.italic),
+                    style: AppTheme.italic,
                   ),
                   TextSpan(text: ' has been added to $targetShelfName shelf'),
                 ],
@@ -849,7 +850,7 @@ class _BookCoverState extends State<BookCover> {
                 const TextSpan(text: 'Added '),
                 TextSpan(
                   text: widget.book.title,
-                  style: const TextStyle(fontStyle: FontStyle.italic),
+                  style: AppTheme.italic,
                 ),
                 TextSpan(text: ' to $listName'),
               ],
@@ -906,7 +907,7 @@ class _BookCoverState extends State<BookCover> {
                 const TextSpan(text: 'Removed '),
                 TextSpan(
                   text: widget.book.title,
-                  style: const TextStyle(fontStyle: FontStyle.italic),
+                  style: AppTheme.italic,
                 ),
                 TextSpan(text: ' from $listName'),
               ],

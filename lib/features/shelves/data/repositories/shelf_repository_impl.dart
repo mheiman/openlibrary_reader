@@ -34,33 +34,33 @@ class ShelfRepositoryImpl extends BaseRepository implements ShelfRepository {
       final shelfKeys = await localDataSource.getConfiguredShelfKeys();
 
       if (forceRefresh) {
-        // Try to fetch from server, but fall back to cache on failure
+        // When force refresh is true, we should NOT fall back to cache
+        // This is typically called after login/logout when we need fresh data for the current user
+        // Falling back to cache could show stale data from a previous user
         try {
           return await _fetchAndCacheShelves(shelfKeys);
         } catch (e) {
-          // If server fetch fails, try to return cached data as fallback
-          try {
-            final cachedShelves = await localDataSource.getCachedShelves();
-            final shelvesWithSort = await _applyStoredSortOrders(cachedShelves);
-            LoggingService.info('getShelves() - returning ${cachedShelves.length} cached shelves as fallback');
-            return Right(shelvesWithSort.map((s) => s.toEntity()).toList());
-          } catch (cacheError) {
-            // Both server and cache failed, rethrow original error
-            rethrow;
-          }
+          // If server fetch fails during force refresh, don't use cache
+          // This ensures we don't show stale data to a different user
+          LoggingService.error('getShelves() - force refresh failed, not using cache to prevent stale data: $e');
+          rethrow; // Don't fall back to cache on force refresh
         }
       }
 
-      // Try to get from cache first
+      // Try to get from cache first (only when not force refreshing)
       try {
         final cachedShelves = await localDataSource.getCachedShelves();
         LoggingService.trace('getShelves() - loaded ${cachedShelves.length} shelves from cache');
 
-        // Return cached data with sort orders applied
-        // Note: We no longer auto-refresh stale shelves here.
-        // The UI will check staleness and refresh specific shelves as needed.
-        final shelvesWithSort = await _applyStoredSortOrders(cachedShelves);
-        return Right(shelvesWithSort.map((s) => s.toEntity()).toList());
+        // Only return cached data if we have some
+        if (cachedShelves.isNotEmpty) {
+          final shelvesWithSort = await _applyStoredSortOrders(cachedShelves);
+          return Right(shelvesWithSort.map((s) => s.toEntity()).toList());
+        }
+
+        // If cache is empty, fetch from server
+        LoggingService.debug('getShelves() - cache is empty, fetching from server');
+        return await _fetchAndCacheShelves(shelfKeys);
       } on CacheException catch (e) {
         // No cache or cache error, fetch from server
         LoggingService.debug('getShelves() - CacheException: $e, fetching from server');

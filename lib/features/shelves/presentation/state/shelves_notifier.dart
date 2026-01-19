@@ -247,6 +247,52 @@ class ShelvesNotifier extends ChangeNotifier {
         return;
       }
 
+      // Special handling for force refresh failures
+      // This can happen after login when we need fresh data but server request fails
+      if (forceRefresh) {
+        LoggingService.error('ShelvesNotifier: Force refresh failed during login - $failure');
+        LoggingService.error('ShelvesNotifier: This should not happen after login, retrying...');
+        
+        // Show loading state while we retry
+        _emit(const ShelvesLoading());
+        
+        // Try one more time after a brief delay
+        try {
+          await Future.delayed(const Duration(seconds: 1));
+          final retryResult = await getShelvesUseCase(forceRefresh: true);
+          
+          if (retryResult.isRight()) {
+            final shelves = (retryResult as Right).value as List<Shelf>;
+            LoggingService.debug('ShelvesNotifier: Retry successful, loaded ${shelves.length} shelves');
+            
+            final bookLists = bookListsResult.isRight()
+                ? (bookListsResult as Right).value as List
+                : <dynamic>[];
+            
+            _emit(ShelvesLoaded(
+              shelves,
+              bookLists: bookLists.cast(),
+            ));
+            
+            // Restore persisted list selection if book lists were loaded
+            if (bookLists.isNotEmpty) {
+              _restorePersistedListSelection();
+            }
+            return;
+          } else {
+            // If retry fails, show error
+            final retryFailure = (retryResult as Left).value as Failure;
+            LoggingService.error('ShelvesNotifier: Retry also failed - ${retryFailure.message}');
+            _emit(ShelvesError('Failed to load shelves after login. Please try refreshing.'));
+            return;
+          }
+        } catch (retryError) {
+          LoggingService.error('ShelvesNotifier: Exception during retry: $retryError');
+          _emit(ShelvesError('Failed to load shelves. Please check your connection.'));
+          return;
+        }
+      }
+
       // If we had stale data, keep it and just clear refreshing flag
       if (_state is ShelvesLoaded) {
         final currentState = _state as ShelvesLoaded;
@@ -256,7 +302,7 @@ class ShelvesNotifier extends ChangeNotifier {
           isRefreshing: false,
         ));
       } else {
-        // Last resort: try to load from cache directly
+        // Last resort: try to load from cache directly (only when not force refreshing)
         LoggingService.error('DEBUG: loadShelves() - error and no loaded state, trying cache as last resort');
         final cacheResult = await repository.getShelves(forceRefresh: false);
         if (cacheResult.isRight()) {

@@ -103,7 +103,7 @@ class _ManualOAuthDialogState extends State<ManualOAuthDialog> {
               'Tip: Long-press to paste the code from your clipboard',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

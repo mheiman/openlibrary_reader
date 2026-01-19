@@ -268,18 +268,18 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_ios),
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 tooltip: 'Back',
                 onPressed: () => context.goBack(),
               ),
               title: Text(
                 widget.title ?? 'Reader',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary,),
               ),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.autorenew_rounded),
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                   tooltip: 'Reload',
                   onPressed: _reloadReader,
                 ),
@@ -604,7 +604,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: Theme.of(context).colorScheme.error,
         duration: const Duration(seconds: 8),
       ),
     );

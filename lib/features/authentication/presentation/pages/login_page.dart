@@ -49,7 +49,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(state.message),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 8),
           ),
         );
@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
                 Text(
                   'A Book Reader for Open Library',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const SizedBox(height: 48),
@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
                 Text(
                   'Sign in with your Open Library account',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -119,11 +119,8 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         style: TextButton.styleFrom(
-                            foregroundColor: (Theme.of(context).brightness ==
-                                    Brightness.light)
-                                ? Colors.black
-                                : Colors.white60,
-                            backgroundColor: Colors.black26),
+                            foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                            backgroundColor: Theme.of(context).colorScheme.secondary),
                       ),
                       TextButton.icon(
                         onPressed: () => launchUrlString(
@@ -137,11 +134,8 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         style: TextButton.styleFrom(
-                            foregroundColor: (Theme.of(context).brightness ==
-                                    Brightness.light)
-                                ? Colors.black
-                                : Colors.white60,
-                            backgroundColor: Colors.black26),
+                            foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                            backgroundColor: Theme.of(context).colorScheme.secondary),
                       ),
                     ]),
               ],

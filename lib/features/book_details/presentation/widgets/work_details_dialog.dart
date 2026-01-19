@@ -492,7 +492,7 @@ class _WorkDetailsDialogState extends State<WorkDetailsDialog> {
         decoration: const BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Color(0x88412c18),
+              color: Colors.black26,
               blurRadius: 15.0,
               spreadRadius: 1.0,
               offset: Offset(1.0, 1.0),

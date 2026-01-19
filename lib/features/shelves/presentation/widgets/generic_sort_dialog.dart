@@ -59,7 +59,7 @@ class _GenericSortDialogState<T> extends State<GenericSortDialog<T>> {
               itemCount: sortOptions.length,
               itemBuilder: (context, index) {
                 return InkWell(
-                  splashColor: Colors.blueAccent,
+                  splashColor: Theme.of(context).colorScheme.tertiary,
                   onTap: () {
                     setState(() {
                       // If tapping the currently selected option, toggle direction
@@ -119,10 +119,10 @@ class _GenericSortOptionItem<T> extends StatelessWidget {
             width: 50.0,
             margin: const EdgeInsets.only(right: 10.0),
             decoration: BoxDecoration(
-              color: option.isSelected ? Colors.blueAccent : Colors.transparent,
+              color: option.isSelected ? Theme.of(context).colorScheme.tertiary : Colors.transparent,
               border: Border.all(
                 width: 1.0,
-                color: option.isSelected ? Colors.blueAccent : Colors.grey,
+                color: option.isSelected ? Theme.of(context).colorScheme.tertiary : Colors.grey,
               ),
               borderRadius: const BorderRadius.all(Radius.circular(2.0)),
             ),

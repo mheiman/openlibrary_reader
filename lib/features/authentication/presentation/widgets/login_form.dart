@@ -150,7 +150,7 @@ class _LoginFormState extends State<LoginForm> {
                   const SizedBox(height: 24),
                   Text('or',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center),
                   const SizedBox(height: 24),

@@ -12,7 +12,7 @@ class AppTheme {
   );
 
   static final ColorScheme lightColorScheme = ColorScheme(
-    primary: Color(0xFF2E260F),
+    primary: Color(0xFF36260F),
     onPrimary: Color(0xFFffffff),
     secondary: Color(0xFF655E51),
     onSecondary: Color(0xFFffffff),

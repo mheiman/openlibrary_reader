@@ -97,7 +97,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
                 // Settings content
                 Expanded(
-                  child: _buildContent(state),
+                  child: _buildContent(context, state),
                 ),
               ],
             );
@@ -107,7 +107,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     );
   }
 
-  Widget _buildContent(SettingsState state) {
+  Widget _buildContent(BuildContext context, SettingsState state) {
     if (state is SettingsLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -119,12 +119,12 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
               const SizedBox(height: 16),
               Text(
                 state.message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               const SizedBox(height: 16),
               ElevatedButton(

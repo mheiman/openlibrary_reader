@@ -69,15 +69,17 @@ class _ShelvesPageState extends State<ShelvesPage>
   }
 
   void _onSettingsChanged() {
-    if (mounted) {
-      // Schedule the update to happen after the current build cycle
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _updateTabController();
-          setState(() {}); // Trigger rebuild if needed
-        }
-      });
-    }
+    if (!mounted) return;
+
+    // Update tab controller synchronously (in case showLists changed)
+    _updateTabController();
+
+    // Schedule rebuild via microtask to avoid calling setState during build
+    Future.microtask(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   void _onShelvesStateChanged() {
@@ -385,7 +387,8 @@ class _ShelvesPageState extends State<ShelvesPage>
       if (_tabController == null || _tabController!.length != expectedTabCount) {
         // Controller not ready yet, update it now
         _updateTabController();
-        if (_tabController == null) {
+        // Re-check after update - if still mismatched, show loading
+        if (_tabController == null || _tabController!.length != expectedTabCount) {
           return const Center(child: CircularProgressIndicator());
         }
       }

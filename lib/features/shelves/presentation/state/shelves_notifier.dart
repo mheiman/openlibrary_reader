@@ -66,14 +66,21 @@ class ShelvesNotifier extends ChangeNotifier {
     required this.authNotifier,
   }) {
     // Listen to auth state changes to detect login
-    authNotifier.addListener(_onAuthStateChanged);
+    authNotifier.addListener(_syncAuthStateChanged);
     _previousAuthState = authNotifier.state;
+  }
+
+  /// Synchronous wrapper for auth state changes to handle async operations safely
+  void _syncAuthStateChanged() {
+    // Schedule the async operation to run after the current event loop completes
+    // This prevents blocking the UI and allows the ChangeNotifier to complete its cycle
+    Future.microtask(() => _onAuthStateChanged());
   }
 
   @override
   void dispose() {
     // Remove auth listener
-    authNotifier.removeListener(_onAuthStateChanged);
+    authNotifier.removeListener(_syncAuthStateChanged);
     
     // Clean up refresh queue resources
     _refreshQueueTimer?.cancel();
@@ -89,33 +96,57 @@ class ShelvesNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Track if we're currently processing an auth state change to prevent re-entrancy
+  bool _isProcessingAuthChange = false;
+
   /// Handle auth state changes - refresh all shelves on new login, clear on logout
-  void _onAuthStateChanged() {
-    final currentState = authNotifier.state;
-    final previousState = _previousAuthState;
+  Future<void> _onAuthStateChanged() async {
+    // Prevent re-entrant calls that could cause race conditions
+    if (_isProcessingAuthChange) {
+      LoggingService.debug('ShelvesNotifier: Ignoring auth state change - already processing');
+      return;
+    }
 
-    // Clear shelf data on logout: AuthLoading → Unauthenticated
-    if (previousState is AuthLoading && currentState is Unauthenticated) {
-      _clearShelfDataAndCache();
-    }
-    // Clear cache when login starts: Unauthenticated → AuthLoading
-    // This ensures old user's cached data is cleared before new user's data loads
-    else if (previousState is Unauthenticated && currentState is AuthLoading) {
-      _clearShelfDataAndCache();
-    }
-    // Refresh on explicit login: AuthLoading → Authenticated
-    // (Login goes through AuthLoading state: Unauthenticated → AuthLoading → Authenticated)
-    else if (previousState is AuthLoading && currentState is Authenticated) {
-      loadShelves(forceRefresh: true);
-    }
-    // On app startup: AuthInitial → Authenticated, load shelves if not already loaded
-    else if (previousState is AuthInitial && currentState is Authenticated) {
-      if (_state is! ShelvesLoaded) {
-        loadShelves();
+    try {
+      _isProcessingAuthChange = true;
+      final currentState = authNotifier.state;
+      final previousState = _previousAuthState;
+
+      LoggingService.debug('ShelvesNotifier: Auth state changed from $previousState to $currentState');
+
+      // Clear shelf data on logout: AuthLoading → Unauthenticated
+      if (previousState is AuthLoading && currentState is Unauthenticated) {
+        LoggingService.debug('ShelvesNotifier: Handling logout - clearing shelf data');
+        await _clearShelfDataAndCache();
       }
-    }
+      // Clear cache when login starts: Unauthenticated → AuthLoading
+      // This ensures old user's cached data is cleared before new user's data loads
+      else if (previousState is Unauthenticated && currentState is AuthLoading) {
+        LoggingService.debug('ShelvesNotifier: Login started - clearing cache');
+        await _clearShelfDataAndCache();
+      }
+      // Refresh on explicit login: AuthLoading → Authenticated
+      // (Login goes through AuthLoading state: Unauthenticated → AuthLoading → Authenticated)
+      else if (previousState is AuthLoading && currentState is Authenticated) {
+        LoggingService.debug('ShelvesNotifier: Login completed - refreshing shelves');
+        await loadShelves(forceRefresh: true);
+      }
+      // On app startup: AuthInitial → Authenticated, load shelves if not already loaded
+      else if (previousState is AuthInitial && currentState is Authenticated) {
+        if (_state is! ShelvesLoaded) {
+          LoggingService.debug('ShelvesNotifier: App startup with authenticated user - loading shelves');
+          await loadShelves();
+        }
+      }
 
-    _previousAuthState = currentState;
+      // Only update previous state if we successfully processed the change
+      _previousAuthState = currentState;
+    } catch (e, stackTrace) {
+      LoggingService.error('ShelvesNotifier: Error processing auth state change', e, stackTrace);
+      // Don't update previous state on error to allow retry
+    } finally {
+      _isProcessingAuthChange = false;
+    }
   }
 
   /// Clear shelf data and cache on logout

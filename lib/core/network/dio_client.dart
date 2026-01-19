@@ -142,18 +142,12 @@ class DioClient {
     }
   }
 
-  /// GET request
-  Future<Response> get(
-    String url, {
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
+  /// Execute a Dio request with standardized error handling
+  Future<Response> _executeRequest(
+    Future<Response> Function() requestFn,
+  ) async {
     try {
-      return await _dio.get(
-        url,
-        queryParameters: queryParameters,
-        options: options,
-      );
+      return await requestFn();
     } on DioException catch (e) {
       // Extract our custom exception from the error property
       if (e.error is AppException) {
@@ -161,6 +155,19 @@ class DioClient {
       }
       rethrow;
     }
+  }
+
+  /// GET request
+  Future<Response> get(
+    String url, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _executeRequest(() => _dio.get(
+      url,
+      queryParameters: queryParameters,
+      options: options,
+    ));
   }
 
   /// POST request
@@ -170,20 +177,12 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      return await _dio.post(
-        url,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-      );
-    } on DioException catch (e) {
-      // Extract our custom exception from the error property
-      if (e.error is AppException) {
-        throw e.error as AppException;
-      }
-      rethrow;
-    }
+    return _executeRequest(() => _dio.post(
+      url,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    ));
   }
 
   /// PUT request
@@ -193,20 +192,12 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      return await _dio.put(
-        url,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-      );
-    } on DioException catch (e) {
-      // Extract our custom exception from the error property
-      if (e.error is AppException) {
-        throw e.error as AppException;
-      }
-      rethrow;
-    }
+    return _executeRequest(() => _dio.put(
+      url,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    ));
   }
 
   /// DELETE request
@@ -216,19 +207,11 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      return await _dio.delete(
-        url,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-      );
-    } on DioException catch (e) {
-      // Extract our custom exception from the error property
-      if (e.error is AppException) {
-        throw e.error as AppException;
-      }
-      rethrow;
-    }
+    return _executeRequest(() => _dio.delete(
+      url,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    ));
   }
 }

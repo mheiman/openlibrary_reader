@@ -53,6 +53,9 @@ class ShelvesNotifier extends ChangeNotifier {
   /// Timer for processing refresh queue
   Timer? _refreshQueueTimer;
 
+  /// Track if the notifier is disposed to prevent operations on disposed objects
+  bool _isDisposed = false;
+
   ShelvesNotifier({
     required this.getShelvesUseCase,
     required this.getBookListsUseCase,
@@ -70,6 +73,13 @@ class ShelvesNotifier extends ChangeNotifier {
     _previousAuthState = authNotifier.state;
   }
 
+  /// Check if the notifier is disposed and throw an exception if so
+  void _checkNotDisposed() {
+    if (_isDisposed) {
+      throw StateError('Cannot perform operations on a disposed ShelvesNotifier');
+    }
+  }
+
   /// Synchronous wrapper for auth state changes to handle async operations safely
   void _syncAuthStateChanged() {
     // Schedule the async operation to run after the current event loop completes
@@ -79,6 +89,11 @@ class ShelvesNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
+    LoggingService.debug('ShelvesNotifier: dispose() called');
+    
+    // Mark as disposed to prevent any further operations
+    _isDisposed = true;
+    
     // Remove auth listener
     authNotifier.removeListener(_syncAuthStateChanged);
     
@@ -86,6 +101,11 @@ class ShelvesNotifier extends ChangeNotifier {
     _refreshQueueTimer?.cancel();
     _refreshQueue.clear();
     _refreshingShelves.clear();
+    
+    // Clear any in-memory data to help with garbage collection
+    _userLoans.clear();
+    
+    LoggingService.debug('ShelvesNotifier: dispose() completed');
     
     super.dispose();
   }
@@ -101,6 +121,12 @@ class ShelvesNotifier extends ChangeNotifier {
 
   /// Handle auth state changes - refresh all shelves on new login, clear on logout
   Future<void> _onAuthStateChanged() async {
+    // Check if disposed before processing
+    if (_isDisposed) {
+      LoggingService.debug('ShelvesNotifier: Ignoring auth state change - notifier is disposed');
+      return;
+    }
+
     // Prevent re-entrant calls that could cause race conditions
     if (_isProcessingAuthChange) {
       LoggingService.debug('ShelvesNotifier: Ignoring auth state change - already processing');
@@ -161,6 +187,8 @@ class ShelvesNotifier extends ChangeNotifier {
 
   /// Load shelves (from cache or server)
   Future<void> loadShelves({bool forceRefresh = false}) async {
+    _checkNotDisposed();
+    
     // Don't load if user is not authenticated (logged out)
     final authState = authNotifier.state;
     if (authState is Unauthenticated) {
@@ -341,6 +369,8 @@ class ShelvesNotifier extends ChangeNotifier {
 
   /// Refresh shelves from server
   Future<void> refreshShelves() async {
+    _checkNotDisposed();
+    
     // Show refreshing indicator if already loaded
     if (_state is ShelvesLoaded) {
       final currentState = _state as ShelvesLoaded;
@@ -414,6 +444,8 @@ class ShelvesNotifier extends ChangeNotifier {
 
   /// Refresh a single shelf from server
   Future<void> refreshShelf(String shelfKey) async {
+    _checkNotDisposed();
+    
     if (_state is! ShelvesLoaded) return;
 
     // Prevent concurrent refreshes of the same shelf

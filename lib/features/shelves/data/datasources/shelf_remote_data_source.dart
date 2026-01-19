@@ -285,25 +285,25 @@ class ShelfRemoteDataSource {
 
       final formData = FormData.fromMap(formDataMap);
 
-      LoggingService.error('DEBUG: ===== API CALL: moveBookToShelf =====');
-      LoggingService.error('DEBUG: POST $url');
-      LoggingService.error('DEBUG: Parameters:');
-      LoggingService.error('DEBUG:   workId: $workId');
-      LoggingService.error('DEBUG:   editionId: ${editionId ?? "(null)"}');
-      LoggingService.error('DEBUG:   targetShelfKey: $targetShelfKey');
-      LoggingService.error('DEBUG:   shelfId: $shelfId');
-      LoggingService.error('DEBUG: POST Body (FormData):');
-      LoggingService.error('DEBUG:   action=add');
-      LoggingService.error('DEBUG:   redir=false');
-      LoggingService.error('DEBUG:   bookshelf_id=$shelfId');
+      LoggingService.debug('DEBUG: ===== API CALL: moveBookToShelf =====');
+      LoggingService.debug('DEBUG: POST $url');
+      LoggingService.debug('DEBUG: Parameters:');
+      LoggingService.debug('DEBUG:   workId: $workId');
+      LoggingService.debug('DEBUG:   editionId: ${editionId ?? "(null)"}');
+      LoggingService.debug('DEBUG:   targetShelfKey: $targetShelfKey');
+      LoggingService.debug('DEBUG:   shelfId: $shelfId');
+      LoggingService.debug('DEBUG: POST Body (FormData):');
+      LoggingService.debug('DEBUG:   action=add');
+      LoggingService.debug('DEBUG:   redir=false');
+      LoggingService.debug('DEBUG:   bookshelf_id=$shelfId');
       if (editionId != null && editionId.isNotEmpty) {
-        LoggingService.error('DEBUG:   edition_id=/books/$editionId');
+        LoggingService.debug('DEBUG:   edition_id=/books/$editionId');
       } else {
-        LoggingService.error('DEBUG:   edition_id=(omitted - no valid edition ID)');
+        LoggingService.debug('DEBUG:   edition_id=(omitted - no valid edition ID)');
       }
-      LoggingService.error('DEBUG:   dont_remove=true');
-      LoggingService.error('DEBUG: Headers:');
-      LoggingService.error('DEBUG:   Cookie: ${cookieHeader.substring(0, 50)}...');
+      LoggingService.debug('DEBUG:   dont_remove=true');
+      LoggingService.debug('DEBUG: Headers:');
+      LoggingService.debug('DEBUG:   Cookie: ${cookieHeader.substring(0, 50)}...');
 
       final response = await dioClient.post(
         url,
@@ -315,9 +315,9 @@ class ShelfRemoteDataSource {
         ),
       );
 
-      LoggingService.error('DEBUG: Response Status: ${response.statusCode}');
-      LoggingService.error('DEBUG: Response Data: ${response.data}');
-      LoggingService.error('DEBUG: ===== API CALL SUCCESS =====');
+      LoggingService.debug('DEBUG: Response Status: ${response.statusCode}');
+      LoggingService.debug('DEBUG: Response Data: ${response.data}');
+      LoggingService.debug('DEBUG: ===== API CALL SUCCESS =====');
     } on AuthException {
       rethrow;
     } on DioException catch (e) {

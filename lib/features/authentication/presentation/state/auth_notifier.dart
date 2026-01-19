@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:injectable/injectable.dart';
@@ -73,6 +75,25 @@ class AuthNotifier extends ChangeNotifier {
         // Clear OAuth tracking
         _lastProcessedCode = null;
 
+        // Revoke OAuth tokens on logout for better security
+        try {
+          LoggingService.debug('🔑 [AuthNotifier] Revoking OAuth tokens on logout');
+          
+          // Get current tokens if available
+          final accessToken = await secureStorage.read('oauth_access_token');
+          final refreshToken = await secureStorage.read('oauth_refresh_token');
+          
+          if (accessToken != null || refreshToken != null) {
+            await oauthService.revokeTokens(
+              accessToken ?? '',
+              refreshToken: refreshToken,
+            );
+          }
+        } catch (e) {
+          LoggingService.warning('🔑 [AuthNotifier] Failed to revoke tokens on logout: $e');
+          // Continue with logout even if token revocation fails
+        }
+
         // Clear image caches on successful logout
         try {
           // Clear Flutter's built-in image cache
@@ -100,6 +121,22 @@ class AuthNotifier extends ChangeNotifier {
       (failure) => _emit(const Unauthenticated()),
       (isLoggedIn) async {
         if (isLoggedIn) {
+          // Check if OAuth token is expired before getting user info
+          try {
+            final tokenData = await secureStorage.read('oauth_tokens');
+            if (tokenData != null) {
+              final tokenMap = json.decode(tokenData) as Map<String, dynamic>;
+              if (oauthService.isTokenExpired(tokenMap)) {
+                LoggingService.debug('🔑 [AuthNotifier] Token expired, forcing re-authentication');
+                _emit(const Unauthenticated());
+                return;
+              }
+            }
+          } catch (e) {
+            LoggingService.warning('🔑 [AuthNotifier] Error checking token expiration: $e');
+            // Continue with login check even if we can't verify token expiration
+          }
+
           // Get current user info
           final userResult = await getCurrentUserUseCase();
           userResult.fold(

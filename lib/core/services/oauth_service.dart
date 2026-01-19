@@ -145,6 +145,9 @@ class OAuthService {
     LoggingService.debug('🔑 [OAuth] Received authorization code: $code');
     LoggingService.debug('🔑 [OAuth] Received state: $state');
     
+    // Add timestamp to track when this token was issued
+    final issuedAt = DateTime.now().millisecondsSinceEpoch;
+    
     try {
       // Verify state matches what we stored
       LoggingService.debug('🔑 [OAuth] Verifying state parameter...');
@@ -257,7 +260,19 @@ class OAuthService {
       
       if (response.statusCode == 200) {
         LoggingService.debug('🔑 [OAuth] Token exchange successful!');
-        return response.data as Map<String, dynamic>;
+        
+        // Add token metadata to the response
+        final tokenData = response.data as Map<String, dynamic>;
+        tokenData['issued_at'] = issuedAt;
+        
+        // Calculate expiration time (default to 1 hour if not provided)
+        final expiresIn = (tokenData['expires_in'] as num?)?.toInt() ?? 3600;
+        final expiresAt = issuedAt + (expiresIn * 1000);
+        tokenData['expires_at'] = expiresAt;
+        
+        LoggingService.debug('🔑 [OAuth] Token expires in $expiresIn seconds (at ${DateTime.fromMillisecondsSinceEpoch(expiresAt)})');
+        
+        return tokenData;
       } else {
         LoggingService.error('🔑 [OAuth] Token exchange failed with status ${response.statusCode}: ${response.statusMessage}');
         throw AuthException('Token exchange failed: ${response.statusMessage}', response.statusCode);
@@ -427,6 +442,84 @@ class OAuthService {
       } catch (e) {
         LoggingService.warning('Failed to save OAuth cookie to CookieManager: $e');
       }
+    }
+  }
+
+  /// Check if token is expired
+  bool isTokenExpired(Map<String, dynamic> tokenData) {
+    try {
+      final expiresAt = tokenData['expires_at'] as int?;
+      if (expiresAt == null) {
+        LoggingService.warning('🔑 [OAuth] No expiration time in token data, assuming expired');
+        return true;
+      }
+      
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      final isExpired = currentTime >= expiresAt;
+      
+      if (isExpired) {
+        LoggingService.debug('🔑 [OAuth] Token expired at ${DateTime.fromMillisecondsSinceEpoch(expiresAt)}');
+      } else {
+        final timeLeft = expiresAt - currentTime;
+        final minutesLeft = (timeLeft / 1000 / 60).round();
+        LoggingService.debug('🔑 [OAuth] Token expires in $minutesLeft minutes');
+      }
+      
+      return isExpired;
+    } catch (e) {
+      LoggingService.error('🔑 [OAuth] Error checking token expiration: $e');
+      return true; // Assume expired if we can't check
+    }
+  }
+
+  /// Revoke OAuth tokens
+  Future<void> revokeTokens(String accessToken, {String? refreshToken}) async {
+    LoggingService.debug('🔑 [OAuth] Starting token revocation process');
+    
+    try {
+      // Try to revoke access token
+      if (accessToken.isNotEmpty) {
+        try {
+          LoggingService.debug('🔑 [OAuth] Revoking access token');
+          
+          // Note: OpenLibrary may not have a standard revocation endpoint
+          // This is a placeholder for when/if they implement it
+          // For now, we'll just log and clear local storage
+          
+          await secureStorage.delete('oauth_tokens');
+          LoggingService.debug('🔑 [OAuth] Access token revoked (cleared from local storage)');
+        } catch (e) {
+          LoggingService.warning('🔑 [OAuth] Failed to revoke access token: $e');
+        }
+      }
+      
+      // Try to revoke refresh token if provided
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        try {
+          LoggingService.debug('🔑 [OAuth] Revoking refresh token');
+          
+          // Note: OpenLibrary may not have a standard revocation endpoint
+          // This is a placeholder for when/if they implement it
+          
+          await secureStorage.delete('oauth_refresh_token');
+          LoggingService.debug('🔑 [OAuth] Refresh token revoked (cleared from local storage)');
+        } catch (e) {
+          LoggingService.warning('🔑 [OAuth] Failed to revoke refresh token: $e');
+        }
+      }
+      
+      // Clear session cookie as well
+      try {
+        await secureStorage.delete('session_cookie');
+        LoggingService.debug('🔑 [OAuth] Session cookie cleared');
+      } catch (e) {
+        LoggingService.warning('🔑 [OAuth] Failed to clear session cookie: $e');
+      }
+      
+      LoggingService.debug('🔑 [OAuth] Token revocation process completed');
+    } catch (e) {
+      LoggingService.error('🔑 [OAuth] Error during token revocation: $e');
+      // Continue with cleanup even if revocation fails
     }
   }
 

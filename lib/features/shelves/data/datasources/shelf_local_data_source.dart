@@ -128,10 +128,10 @@ class ShelfLocalDataSource {
       }
 
       // Return default shelves
-      return ['want-to-read', 'currently-reading', 'already-read'];
+      return ['currently-reading', 'want-to-read', 'already-read'];
     } catch (e) {
       // Return default on error
-      return ['want-to-read', 'currently-reading', 'already-read'];
+      return ['currently-reading', 'want-to-read', 'already-read'];
     }
   }
 

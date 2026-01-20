@@ -360,6 +360,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             }
           },
           onLoadStart: (controller, url) {
+            // Don't reset progress if we're already at the theater view
+            if (_progress >= 0.8) return;
+
             _currentLoadingDomain = 'openlibrary.org';
             _startLoadingTimeout();
             setState(() {
@@ -370,15 +373,20 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           },
           onLoadStop: (controller, url) async {
             debugPrint('Reader onLoadStop: $url');
-            if (url.toString().contains('view=theater')) {
+            final urlString = url.toString();
+            if (urlString.contains('view=theater')) {
+              _cancelLoadingTimeout();
               if (Platform.isAndroid) {
                 await _injectReaderCode(controller);
               }
+              // On iOS, hide overlay here; on Android, wait for PostInit message
+              if (Platform.isIOS) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
             }
-            _cancelLoadingTimeout();
-            setState(() {
-              _isLoading = false;
-            });
+            // Don't hide overlay for intermediate page loads
           },
           onReceivedError: (controller, url, code) {
             _cancelLoadingTimeout();

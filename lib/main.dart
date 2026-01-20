@@ -141,17 +141,22 @@ Future<void> _handleDeepLink(Uri uri, AuthNotifier authNotifier) async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final _router = getIt<AppRouter>().router;
+
   @override
   Widget build(BuildContext context) {
-    final router = getIt<AppRouter>().router;
-
-    return MaterialApp.router(
-      title: 'OL Reader',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      routerConfig: router,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppTheme.themeMode,
+      builder: (context, themeMode, _) {
+        return MaterialApp.router(
+          title: 'OL Reader',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          routerConfig: _router,
+        );
+      },
     );
   }
 }

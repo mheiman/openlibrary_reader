@@ -29,6 +29,14 @@ class AppSettings extends Equatable {
   /// Show Lists tab
   final bool showLists;
 
+  /// Dark mode setting: 'off', 'on', 'auto'
+  final String darkMode;
+
+  /// Dark mode options
+  static const String darkModeOff = 'off';
+  static const String darkModeOn = 'on';
+  static const String darkModeAuto = 'auto';
+
   /// Default cover width
   static const double defaultCoverWidth = 80.0;
 
@@ -48,6 +56,7 @@ class AppSettings extends Equatable {
     this.searchSortOrder = 'datePublished',
     this.searchSortAscending = true,
     this.showLists = false,
+    this.darkMode = darkModeOff,
   });
 
   /// Get cover height based on width (1.5 aspect ratio)
@@ -64,6 +73,7 @@ class AppSettings extends Equatable {
         searchSortOrder,
         searchSortAscending,
         showLists,
+        darkMode,
       ];
 
   /// Copy with updated fields
@@ -77,6 +87,7 @@ class AppSettings extends Equatable {
     String? searchSortOrder,
     bool? searchSortAscending,
     bool? showLists,
+    String? darkMode,
   }) {
     return AppSettings(
       moveToReading: moveToReading ?? this.moveToReading,
@@ -88,6 +99,7 @@ class AppSettings extends Equatable {
       searchSortOrder: searchSortOrder ?? this.searchSortOrder,
       searchSortAscending: searchSortAscending ?? this.searchSortAscending,
       showLists: showLists ?? this.showLists,
+      darkMode: darkMode ?? this.darkMode,
     );
   }
 }

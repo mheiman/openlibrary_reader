@@ -81,4 +81,5 @@ class ApiConstants {
   static const String prefSearchSortAscending = 'searchSortAscending';
   static const String prefShowLists = 'showLists';
   static const String prefSelectedList = 'selectedList';
+  static const String prefDarkMode = 'darkMode';
 }

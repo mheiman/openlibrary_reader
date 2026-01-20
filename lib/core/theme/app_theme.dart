@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../features/settings/domain/entities/app_settings.dart';
+
 class AppTheme {
   static final BorderRadius _buttonBorderRadius = BorderRadius.circular(8);
+
+  /// Current theme mode notifier - update this to change the app theme
+  static final ValueNotifier<ThemeMode> themeMode = ValueNotifier(ThemeMode.light);
+
+  /// Update theme mode from dark mode setting string
+  static void setDarkMode(String darkMode) {
+    final newMode = switch (darkMode) {
+      AppSettings.darkModeOn => ThemeMode.dark,
+      AppSettings.darkModeAuto => ThemeMode.system,
+      _ => ThemeMode.light,
+    };
+    // Only update if changed to avoid unnecessary rebuilds
+    if (themeMode.value != newMode) {
+      themeMode.value = newMode;
+    }
+  }
 
   /// Italic text style that uses the proper Roboto-Italic font.
   /// Use this instead of just FontStyle.italic to avoid synthetic italics.
@@ -64,6 +82,13 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: _buttonBorderRadius,
         ),
+      ),
+    ),
+
+    buttonTheme: ButtonThemeData(
+      textTheme: ButtonTextTheme.primary,
+      shape: RoundedRectangleBorder(
+        borderRadius: _buttonBorderRadius,
       ),
     ),
 

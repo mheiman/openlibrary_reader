@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/entities/app_settings.dart';
 import '../../domain/usecases/get_settings.dart';
 import '../../domain/usecases/reset_settings.dart';
@@ -37,7 +38,10 @@ class SettingsNotifier extends ChangeNotifier {
 
     result.fold(
       (failure) => _setState(SettingsError(failure.message)),
-      (settings) => _setState(SettingsLoaded(settings)),
+      (settings) {
+        AppTheme.setDarkMode(settings.darkMode);
+        _setState(SettingsLoaded(settings));
+      },
     );
   }
 

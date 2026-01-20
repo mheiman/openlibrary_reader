@@ -63,6 +63,11 @@ class SettingsRepositoryImpl extends BaseRepository implements SettingsRepositor
           ) ??
           false;
 
+      final darkMode = preferencesService.getString(
+            ApiConstants.prefDarkMode,
+          ) ??
+          AppSettings.darkModeOff;
+
       final settings = AppSettings(
         moveToReading: moveToReading,
         showChrome: showChrome,
@@ -73,6 +78,7 @@ class SettingsRepositoryImpl extends BaseRepository implements SettingsRepositor
         searchSortOrder: searchSortOrder,
         searchSortAscending: searchSortAscending,
         showLists: showLists,
+        darkMode: darkMode,
       );
 
       return Right(settings);
@@ -131,6 +137,11 @@ class SettingsRepositoryImpl extends BaseRepository implements SettingsRepositor
         settings.showLists,
       );
 
+      await preferencesService.setString(
+        ApiConstants.prefDarkMode,
+        settings.darkMode,
+      );
+
       return const Right(null);
     } catch (e) {
       return Left(CacheFailure('Failed to update settings: ${e.toString()}'));
@@ -149,6 +160,7 @@ class SettingsRepositoryImpl extends BaseRepository implements SettingsRepositor
       await preferencesService.remove(ApiConstants.prefSearchSortOrder);
       await preferencesService.remove(ApiConstants.prefSearchSortAscending);
       await preferencesService.remove(ApiConstants.prefShowLists);
+      await preferencesService.remove(ApiConstants.prefDarkMode);
 
       return const Right(null);
     } catch (e) {

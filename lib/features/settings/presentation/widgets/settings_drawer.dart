@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/navigation_extensions.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/state/auth_notifier.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
 import '../../../shelves/presentation/state/shelves_notifier.dart';
@@ -75,34 +76,33 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Drawer(
-        child: ListenableBuilder(
-          listenable: _notifier,
-          builder: (context, _) {
-            final state = _notifier.state;
+    final topPadding = MediaQuery.of(context).padding.top;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  color: Theme.of(context).colorScheme.primary,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  child: Text(
-                    'Options',
-                    style: Theme.of(context).textTheme.titleLarge
-                  ),
-                ),
+    return Drawer(
+      child: ListenableBuilder(
+        listenable: _notifier,
+        builder: (context, _) {
+          final state = _notifier.state;
 
-                // Settings content
-                Expanded(
-                  child: _buildContent(context, state),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                color: Theme.of(context).colorScheme.primary,
+                padding: EdgeInsets.fromLTRB(16, 12 + topPadding, 16, 12),
+                child: Text(
+                  'Options',
+                  style: Theme.of(context).textTheme.titleLarge
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+
+              // Settings content
+              Expanded(
+                child: _buildContent(context, state),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -141,6 +141,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       final settings = state.settings;
 
       return ListView(
+        padding: EdgeInsets.zero,
         children: [
           // Login/Logout
           ListenableBuilder(
@@ -197,6 +198,36 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
             onChanged: (value) {
               _updateSetting(settings.copyWith(keepAwake: value));
             },
+          ),
+
+          const Divider(),
+
+          // Dark Mode
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Dark Mode', style: Theme.of(context).listTileTheme.titleTextStyle),
+                const SizedBox(height: 8),
+                Center(
+                  child: SegmentedButton<String>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: AppSettings.darkModeOff, label: Text('Off')),
+                      ButtonSegment(value: AppSettings.darkModeOn, label: Text('On')),
+                      ButtonSegment(value: AppSettings.darkModeAuto, label: Text('Auto')),
+                    ],
+                    selected: {settings.darkMode},
+                    onSelectionChanged: (Set<String> selection) {
+                      final value = selection.first;
+                      _updateSetting(settings.copyWith(darkMode: value));
+                      AppTheme.setDarkMode(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
 
           const Divider(),

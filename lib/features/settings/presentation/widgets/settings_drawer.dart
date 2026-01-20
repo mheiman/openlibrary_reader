@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/navigation_extensions.dart';
+import '../../../../core/services/logging_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/state/auth_notifier.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
@@ -25,6 +26,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   late final AuthNotifier _authNotifier;
   late final ShelvesNotifier _shelvesNotifier;
   String _appVersion = '';
+  bool _debugMode = LoggingService.debugMode;
 
   @override
   void initState() {
@@ -50,6 +52,19 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
         _appVersion = packageInfo.version;
       });
     }
+  }
+
+  Future<void> _handleDebugToggle() async {
+    if (_debugMode) {
+      // Debug mode is on - export logs and turn off
+      await LoggingService.exportLogs();
+    }
+
+    // Toggle debug mode
+    setState(() {
+      _debugMode = !_debugMode;
+      LoggingService.setDebugMode(_debugMode);
+    });
   }
 
   void _updateSetting(AppSettings settings) {
@@ -315,19 +330,25 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
           const Divider(),
 
-          // Version
-          ListTile(
-            title: Row(
-              children: [
-                const Expanded(child: Text('Version')),
-                Text(
-                  _appVersion.isNotEmpty ? _appVersion : 'Loading...',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+          // Version (double-tap to toggle debug mode)
+          GestureDetector(
+            onDoubleTap: _handleDebugToggle,
+            child: ListTile(
+              title: Row(
+                children: [
+                  const Expanded(child: Text('Version')),
+                  ?_debugMode
+                      ? Icon(Icons.bug_report, color: Theme.of(context).colorScheme.error)
+                      : null,
+                  Text(
+                    _appVersion.isNotEmpty ? _appVersion : 'Loading...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

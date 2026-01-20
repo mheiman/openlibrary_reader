@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:logger/logger.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Logging service that provides consistent logging throughout the application.
-/// 
+///
 /// Features:
 /// - Multiple log levels (trace, debug, info, warning, error, fatal)
 /// - Clean, succinct output without ANSI color codes
 /// - Stack trace support for errors
 /// - Production-ready logging
+/// - Debug mode for capturing logs to send via email
 class LoggingService {
   static final Logger _logger = Logger(
     printer: PrettyPrinter(
@@ -22,34 +26,88 @@ class LoggingService {
     filter: _ProductionFilter(), // Filter out debug/trace in production
   );
 
+  /// Whether debug logging mode is enabled (captures logs for export)
+  static bool _debugMode = false;
+
+  /// In-memory log storage when debug mode is enabled
+  static final List<String> _debugLog = [];
+
+  /// Get current debug mode state
+  static bool get debugMode => _debugMode;
+
+  /// Toggle debug mode on/off
+  static void setDebugMode(bool enabled) {
+    _debugMode = enabled;
+    if (enabled) {
+      _debugLog.clear();
+      _debugLog.add('=== DEBUG LOG STARTED ===');
+      _debugLog.add('Time: ${DateTime.now().toIso8601String()}');
+      _debugLog.add('OS: ${Platform.operatingSystem}');
+      _debugLog.add('OS Version: ${Platform.operatingSystemVersion}');
+      _debugLog.add('');
+    }
+  }
+
+  /// Export debug logs via email
+  static Future<bool> exportLogs() async {
+    if (_debugLog.isEmpty) return false;
+
+    const subject = 'OL Reader Debug Report';
+    final body = _debugLog.join('\n');
+    final uri = Uri.parse(
+      'mailto:olreader@loomis-house.com?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
+    );
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+      _debugLog.clear();
+      return true;
+    }
+    return false;
+  }
+
+  /// Add a message to the debug log if debug mode is enabled
+  static void _addToDebugLog(String level, String message) {
+    if (_debugMode) {
+      final timestamp = DateTime.now().toIso8601String().substring(11, 23);
+      _debugLog.add('[$timestamp] $level: $message');
+    }
+  }
+
   /// Log trace messages (very detailed debugging information)
   static void trace(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.t(message, error: error, stackTrace: stackTrace);
+    _addToDebugLog('TRACE', message);
   }
 
   /// Log debug messages (debugging information)
   static void debug(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.d(message, error: error, stackTrace: stackTrace);
+    _addToDebugLog('DEBUG', message);
   }
 
   /// Log informational messages (general application flow)
   static void info(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.i(message, error: error, stackTrace: stackTrace);
+    _addToDebugLog('INFO', message);
   }
 
   /// Log warning messages (potential issues)
   static void warning(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.w(message, error: error, stackTrace: stackTrace);
+    _addToDebugLog('WARN', message);
   }
 
   /// Log error messages (errors that don't crash the app)
   static void error(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.e(message, error: error, stackTrace: stackTrace);
+    _addToDebugLog('ERROR', error != null ? '$message: $error' : message);
   }
 
   /// Log fatal messages (severe errors that may crash the app)
   static void fatal(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.f(message, error: error, stackTrace: stackTrace);
+    _addToDebugLog('FATAL', error != null ? '$message: $error' : message);
   }
 }
 

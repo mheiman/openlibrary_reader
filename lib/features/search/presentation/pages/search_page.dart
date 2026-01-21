@@ -55,6 +55,7 @@ class _SearchPageState extends State<SearchPage> {
   bool _isSearchLoaded = false;
   double _coverWidth = AppSettings.defaultCoverWidth;
   String _lastOpenLibraryQuery = ''; // Track the last OpenLibrary search query
+  Uri? _lastProcessedUri; // Track the last processed URI to avoid re-applying params
 
   @override
   void initState() {
@@ -272,6 +273,14 @@ class _SearchPageState extends State<SearchPage> {
     if (!mounted) return;
 
     final uri = GoRouterState.of(context).uri;
+
+    // Only process if the URI has actually changed (new navigation)
+    // This prevents re-applying params when dialogs close or other dependency changes occur
+    if (_lastProcessedUri != null && _lastProcessedUri == uri) {
+      return;
+    }
+    _lastProcessedUri = uri;
+
     final queryParam = uri.queryParameters['query'];
     final filterParam = uri.queryParameters['filter'];
 

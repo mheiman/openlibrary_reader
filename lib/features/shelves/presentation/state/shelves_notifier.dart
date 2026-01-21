@@ -79,7 +79,9 @@ class ShelvesNotifier extends ChangeNotifier {
   /// Check if the notifier is disposed and throw an exception if so
   void _checkNotDisposed() {
     if (_isDisposed) {
-      throw StateError('Cannot perform operations on a disposed ShelvesNotifier');
+      throw StateError(
+        'Cannot perform operations on a disposed ShelvesNotifier',
+      );
     }
   }
 
@@ -93,23 +95,23 @@ class ShelvesNotifier extends ChangeNotifier {
   @override
   void dispose() {
     LoggingService.debug('ShelvesNotifier: dispose() called');
-    
+
     // Mark as disposed to prevent any further operations
     _isDisposed = true;
-    
+
     // Remove auth listener
     authNotifier.removeListener(_syncAuthStateChanged);
-    
+
     // Clean up refresh queue resources
     _refreshQueueTimer?.cancel();
     _refreshQueue.clear();
     _refreshingShelves.clear();
-    
+
     // Clear any in-memory data to help with garbage collection
     _userLoans.clear();
-    
+
     LoggingService.debug('ShelvesNotifier: dispose() completed');
-    
+
     super.dispose();
   }
 
@@ -126,13 +128,17 @@ class ShelvesNotifier extends ChangeNotifier {
   Future<void> _onAuthStateChanged() async {
     // Check if disposed before processing
     if (_isDisposed) {
-      LoggingService.debug('ShelvesNotifier: Ignoring auth state change - notifier is disposed');
+      LoggingService.debug(
+        'ShelvesNotifier: Ignoring auth state change - notifier is disposed',
+      );
       return;
     }
 
     // Prevent re-entrant calls that could cause race conditions
     if (_isProcessingAuthChange) {
-      LoggingService.debug('ShelvesNotifier: Ignoring auth state change - already processing');
+      LoggingService.debug(
+        'ShelvesNotifier: Ignoring auth state change - already processing',
+      );
       return;
     }
 
@@ -141,29 +147,38 @@ class ShelvesNotifier extends ChangeNotifier {
       final currentState = authNotifier.state;
       final previousState = _previousAuthState;
 
-      LoggingService.debug('ShelvesNotifier: Auth state changed from $previousState to $currentState');
+      LoggingService.debug(
+        'ShelvesNotifier: Auth state changed from $previousState to $currentState',
+      );
 
       // Clear shelf data on logout: AuthLoading → Unauthenticated
       if (previousState is AuthLoading && currentState is Unauthenticated) {
-        LoggingService.debug('ShelvesNotifier: Handling logout - clearing shelf data');
+        LoggingService.debug(
+          'ShelvesNotifier: Handling logout - clearing shelf data',
+        );
         await _clearShelfDataAndCache();
       }
       // Clear cache when login starts: Unauthenticated → AuthLoading
       // This ensures old user's cached data is cleared before new user's data loads
-      else if (previousState is Unauthenticated && currentState is AuthLoading) {
+      else if (previousState is Unauthenticated &&
+          currentState is AuthLoading) {
         LoggingService.debug('ShelvesNotifier: Login started - clearing cache');
         await _clearShelfDataAndCache();
       }
       // Refresh on explicit login: AuthLoading → Authenticated
       // (Login goes through AuthLoading state: Unauthenticated → AuthLoading → Authenticated)
       else if (previousState is AuthLoading && currentState is Authenticated) {
-        LoggingService.debug('ShelvesNotifier: Login completed - refreshing shelves');
+        LoggingService.debug(
+          'ShelvesNotifier: Login completed - refreshing shelves',
+        );
         await loadShelves(forceRefresh: true);
       }
       // On app startup: AuthInitial → Authenticated, load shelves if not already loaded
       else if (previousState is AuthInitial && currentState is Authenticated) {
         if (_state is! ShelvesLoaded) {
-          LoggingService.debug('ShelvesNotifier: App startup with authenticated user - loading shelves');
+          LoggingService.debug(
+            'ShelvesNotifier: App startup with authenticated user - loading shelves',
+          );
           await loadShelves();
         }
       }
@@ -171,7 +186,11 @@ class ShelvesNotifier extends ChangeNotifier {
       // Only update previous state if we successfully processed the change
       _previousAuthState = currentState;
     } catch (e, stackTrace) {
-      LoggingService.error('ShelvesNotifier: Error processing auth state change', e, stackTrace);
+      LoggingService.error(
+        'ShelvesNotifier: Error processing auth state change',
+        e,
+        stackTrace,
+      );
       // Don't update previous state on error to allow retry
     } finally {
       _isProcessingAuthChange = false;
@@ -191,7 +210,7 @@ class ShelvesNotifier extends ChangeNotifier {
   /// Load shelves (from cache or server)
   Future<void> loadShelves({bool forceRefresh = false}) async {
     _checkNotDisposed();
-    
+
     // Don't load if user is not authenticated (logged out)
     final authState = authNotifier.state;
     if (authState is Unauthenticated) {
@@ -201,11 +220,13 @@ class ShelvesNotifier extends ChangeNotifier {
     // If we already have loaded shelves, keep showing them while refreshing
     if (_state is ShelvesLoaded) {
       final currentState = _state as ShelvesLoaded;
-      _emit(ShelvesLoaded(
-        currentState.shelves,
-        bookLists: currentState.bookLists,
-        isRefreshing: true,
-      ));
+      _emit(
+        ShelvesLoaded(
+          currentState.shelves,
+          bookLists: currentState.bookLists,
+          isRefreshing: true,
+        ),
+      );
     } else {
       // First time loading - show loading state
       _emit(const ShelvesLoading());
@@ -246,7 +267,9 @@ class ShelvesNotifier extends ChangeNotifier {
 
       // If it's an auth failure, don't show error - router will redirect to login
       if (failure is AuthFailure || failure is UnauthorizedFailure) {
-        LoggingService.error('DEBUG: loadShelves() - auth failure detected, router will handle redirect');
+        LoggingService.debug(
+          'loadShelves() - auth failure detected, router will handle redirect',
+        );
         // Keep current state or show initial state, don't show error
         if (_state is! ShelvesLoaded) {
           _emit(const ShelvesInitial());
@@ -257,30 +280,33 @@ class ShelvesNotifier extends ChangeNotifier {
       // Special handling for force refresh failures
       // This can happen after login when we need fresh data but server request fails
       if (forceRefresh) {
-        LoggingService.error('ShelvesNotifier: Force refresh failed during login - $failure');
-        LoggingService.error('ShelvesNotifier: This should not happen after login, retrying...');
-        
+        LoggingService.error(
+          'ShelvesNotifier: Force refresh failed during login - $failure',
+        );
+        LoggingService.error(
+          'ShelvesNotifier: This should not happen after login, retrying...',
+        );
+
         // Show loading state while we retry
         _emit(const ShelvesLoading());
-        
+
         // Try one more time after a brief delay
         try {
           await Future.delayed(const Duration(seconds: 1));
           final retryResult = await getShelvesUseCase(forceRefresh: true);
-          
+
           if (retryResult.isRight()) {
             final shelves = (retryResult as Right).value as List<Shelf>;
-            LoggingService.debug('ShelvesNotifier: Retry successful, loaded ${shelves.length} shelves');
-            
+            LoggingService.debug(
+              'ShelvesNotifier: Retry successful, loaded ${shelves.length} shelves',
+            );
+
             final bookLists = bookListsResult.isRight()
                 ? (bookListsResult as Right).value as List
                 : <dynamic>[];
-            
-            _emit(ShelvesLoaded(
-              shelves,
-              bookLists: bookLists.cast(),
-            ));
-            
+
+            _emit(ShelvesLoaded(shelves, bookLists: bookLists.cast()));
+
             // Restore persisted list selection if book lists were loaded
             if (bookLists.isNotEmpty) {
               _restorePersistedListSelection();
@@ -289,13 +315,25 @@ class ShelvesNotifier extends ChangeNotifier {
           } else {
             // If retry fails, show error
             final retryFailure = (retryResult as Left).value as Failure;
-            LoggingService.error('ShelvesNotifier: Retry also failed - ${retryFailure.message}');
-            _emit(ShelvesError('Failed to load shelves after login. Please try refreshing.'));
+            LoggingService.error(
+              'ShelvesNotifier: Retry also failed - ${retryFailure.message}',
+            );
+            _emit(
+              ShelvesError(
+                'Failed to load shelves after login. Please try refreshing.',
+              ),
+            );
             return;
           }
         } catch (retryError) {
-          LoggingService.error('ShelvesNotifier: Exception during retry: $retryError');
-          _emit(ShelvesError('Failed to load shelves. Please check your connection.'));
+          LoggingService.error(
+            'ShelvesNotifier: Exception during retry: $retryError',
+          );
+          _emit(
+            ShelvesError(
+              'Failed to load shelves. Please check your connection.',
+            ),
+          );
           return;
         }
       }
@@ -303,18 +341,24 @@ class ShelvesNotifier extends ChangeNotifier {
       // If we had stale data, keep it and just clear refreshing flag
       if (_state is ShelvesLoaded) {
         final currentState = _state as ShelvesLoaded;
-        _emit(ShelvesLoaded(
-          currentState.shelves,
-          bookLists: currentState.bookLists,
-          isRefreshing: false,
-        ));
+        _emit(
+          ShelvesLoaded(
+            currentState.shelves,
+            bookLists: currentState.bookLists,
+            isRefreshing: false,
+          ),
+        );
       } else {
         // Last resort: try to load from cache directly (only when not force refreshing)
-        LoggingService.error('DEBUG: loadShelves() - error and no loaded state, trying cache as last resort');
+        LoggingService.debug(
+          'loadShelves() - error and no loaded state, trying cache as last resort',
+        );
         final cacheResult = await repository.getShelves(forceRefresh: false);
         if (cacheResult.isRight()) {
           final shelves = (cacheResult as Right).value as List<Shelf>;
-          LoggingService.error('DEBUG: loadShelves() - recovered ${shelves.length} shelves from cache');
+          LoggingService.debug(
+            'loadShelves() - recovered ${shelves.length} shelves from cache',
+          );
           _emit(ShelvesLoaded(shelves, bookLists: currentBookLists.cast()));
         } else {
           _emit(ShelvesError(failure.message));
@@ -327,10 +371,7 @@ class ShelvesNotifier extends ChangeNotifier {
           ? (bookListsResult as Right).value as List
           : <dynamic>[];
 
-      _emit(ShelvesLoaded(
-        shelves,
-        bookLists: bookLists.cast(),
-      ));
+      _emit(ShelvesLoaded(shelves, bookLists: bookLists.cast()));
 
       // Restore persisted list selection if book lists were loaded
       if (bookLists.isNotEmpty) {
@@ -381,11 +422,13 @@ class ShelvesNotifier extends ChangeNotifier {
 
             // Emit state with shelves loaded so far
             // Book lists will be empty until they finish loading
-            _emit(ShelvesLoaded(
-              List.from(loadedShelves),
-              bookLists: [],
-              isRefreshing: true,
-            ));
+            _emit(
+              ShelvesLoaded(
+                List.from(loadedShelves),
+                bookLists: [],
+                isRefreshing: true,
+              ),
+            );
           }
         } catch (e) {
           // Continue with other shelves
@@ -401,11 +444,13 @@ class ShelvesNotifier extends ChangeNotifier {
 
       // Emit final state with all data and refreshing=false
       if (loadedShelves.isNotEmpty) {
-        _emit(ShelvesLoaded(
-          loadedShelves,
-          bookLists: bookLists.cast(),
-          isRefreshing: false,
-        ));
+        _emit(
+          ShelvesLoaded(
+            loadedShelves,
+            bookLists: bookLists.cast(),
+            isRefreshing: false,
+          ),
+        );
 
         // Restore persisted list selection if book lists were loaded
         if (bookLists.isNotEmpty) {
@@ -426,15 +471,17 @@ class ShelvesNotifier extends ChangeNotifier {
   /// Refresh shelves from server
   Future<void> refreshShelves() async {
     _checkNotDisposed();
-    
+
     // Show refreshing indicator if already loaded
     if (_state is ShelvesLoaded) {
       final currentState = _state as ShelvesLoaded;
-      _emit(ShelvesLoaded(
-        currentState.shelves,
-        bookLists: currentState.bookLists,
-        isRefreshing: true,
-      ));
+      _emit(
+        ShelvesLoaded(
+          currentState.shelves,
+          bookLists: currentState.bookLists,
+          isRefreshing: true,
+        ),
+      );
     }
 
     // Fetch shelves, book lists, and loans concurrently
@@ -459,15 +506,19 @@ class ShelvesNotifier extends ChangeNotifier {
 
       // If it's an auth failure, don't show error - router will redirect to login
       if (failure is AuthFailure || failure is UnauthorizedFailure) {
-        LoggingService.error('DEBUG: refreshShelves() - auth failure detected, router will handle redirect');
+        LoggingService.debug(
+          'refreshShelves() - auth failure detected, router will handle redirect',
+        );
         // Keep current state and clear refreshing flag
         if (_state is ShelvesLoaded) {
           final currentState = _state as ShelvesLoaded;
-          _emit(ShelvesLoaded(
-            currentState.shelves,
-            bookLists: currentState.bookLists,
-            isRefreshing: false,
-          ));
+          _emit(
+            ShelvesLoaded(
+              currentState.shelves,
+              bookLists: currentState.bookLists,
+              isRefreshing: false,
+            ),
+          );
         }
         return;
       }
@@ -476,11 +527,13 @@ class ShelvesNotifier extends ChangeNotifier {
       // This prevents losing partially loaded data if user navigates away
       if (_state is ShelvesLoaded) {
         final currentState = _state as ShelvesLoaded;
-        _emit(ShelvesLoaded(
-          currentState.shelves,
-          bookLists: currentState.bookLists,
-          isRefreshing: false,
-        ));
+        _emit(
+          ShelvesLoaded(
+            currentState.shelves,
+            bookLists: currentState.bookLists,
+            isRefreshing: false,
+          ),
+        );
       } else {
         _emit(ShelvesError(failure.message));
       }
@@ -491,17 +544,14 @@ class ShelvesNotifier extends ChangeNotifier {
           ? (bookListsResult as Right).value as List
           : <dynamic>[];
 
-      _emit(ShelvesLoaded(
-        shelves,
-        bookLists: bookLists.cast(),
-      ));
+      _emit(ShelvesLoaded(shelves, bookLists: bookLists.cast()));
     }
   }
 
   /// Refresh a single shelf from server
   Future<void> refreshShelf(String shelfKey) async {
     _checkNotDisposed();
-    
+
     if (_state is! ShelvesLoaded) return;
 
     // Prevent concurrent refreshes of the same shelf
@@ -520,11 +570,13 @@ class ShelvesNotifier extends ChangeNotifier {
     final currentState = _state as ShelvesLoaded;
 
     // Mark as refreshing
-    _emit(ShelvesLoaded(
-      currentState.shelves,
-      bookLists: currentState.bookLists,
-      isRefreshing: true,
-    ));
+    _emit(
+      ShelvesLoaded(
+        currentState.shelves,
+        bookLists: currentState.bookLists,
+        isRefreshing: true,
+      ),
+    );
 
     try {
       // Fetch shelf and loans concurrently
@@ -544,11 +596,13 @@ class ShelvesNotifier extends ChangeNotifier {
       result.fold(
         (failure) {
           // On error, keep current data and clear refreshing flag
-          _emit(ShelvesLoaded(
-            currentState.shelves,
-            bookLists: currentState.bookLists,
-            isRefreshing: false,
-          ));
+          _emit(
+            ShelvesLoaded(
+              currentState.shelves,
+              bookLists: currentState.bookLists,
+              isRefreshing: false,
+            ),
+          );
         },
         (updatedShelf) {
           // Update just this shelf in the list
@@ -556,11 +610,13 @@ class ShelvesNotifier extends ChangeNotifier {
             return shelf.key == shelfKey ? updatedShelf as Shelf : shelf;
           }).toList();
 
-          _emit(ShelvesLoaded(
-            updatedShelves,
-            bookLists: currentState.bookLists,
-            isRefreshing: false,
-          ));
+          _emit(
+            ShelvesLoaded(
+              updatedShelves,
+              bookLists: currentState.bookLists,
+              isRefreshing: false,
+            ),
+          );
 
           // Process any redirect candidates in the background
           _processRedirectCandidates();
@@ -569,7 +625,7 @@ class ShelvesNotifier extends ChangeNotifier {
     } finally {
       // Always remove from refreshing set when done
       _refreshingShelves.remove(shelfKey);
-      
+
       // Process any queued refreshes for this shelf
       _processRefreshQueue();
     }
@@ -588,12 +644,12 @@ class ShelvesNotifier extends ChangeNotifier {
       // Get the first item in queue
       if (_refreshQueue.isNotEmpty) {
         final shelfKey = _refreshQueue.removeAt(0);
-        
+
         // Only process if not already refreshing
         if (!_refreshingShelves.contains(shelfKey)) {
           refreshShelf(shelfKey);
         }
-        
+
         // Process remaining items
         _processRefreshQueue();
       }
@@ -730,19 +786,18 @@ class ShelvesNotifier extends ChangeNotifier {
       ascending: ascending,
     );
 
-    result.fold(
-      (failure) => _emit(ShelvesError(failure.message)),
-      (updatedShelf) {
-        // Update the shelf in current state
-        if (_state is ShelvesLoaded) {
-          final currentState = _state as ShelvesLoaded;
-          final updatedShelves = currentState.shelves.map((shelf) {
-            return shelf.key == shelfKey ? updatedShelf : shelf;
-          }).toList();
-          _emit(currentState.copyWith(shelves: updatedShelves));
-        }
-      },
-    );
+    result.fold((failure) => _emit(ShelvesError(failure.message)), (
+      updatedShelf,
+    ) {
+      // Update the shelf in current state
+      if (_state is ShelvesLoaded) {
+        final currentState = _state as ShelvesLoaded;
+        final updatedShelves = currentState.shelves.map((shelf) {
+          return shelf.key == shelfKey ? updatedShelf : shelf;
+        }).toList();
+        _emit(currentState.copyWith(shelves: updatedShelves));
+      }
+    });
   }
 
   /// Refresh a single book's edition data from the server
@@ -763,7 +818,9 @@ class ShelvesNotifier extends ChangeNotifier {
         editionId: book.editionId,
         workId: book.workId,
         title: editionDetails.title,
-        authors: editionDetails.authors.isNotEmpty ? editionDetails.authors : book.authors,
+        authors: editionDetails.authors.isNotEmpty
+            ? editionDetails.authors
+            : book.authors,
         coverImageId: editionDetails.coverImageId,
         coverEditionId: book.editionId, // Use edition ID for cover
         publishDate: editionDetails.publishDate ?? book.publishDate,
@@ -807,19 +864,18 @@ class ShelvesNotifier extends ChangeNotifier {
       isVisible: isVisible,
     );
 
-    result.fold(
-      (failure) => _emit(ShelvesError(failure.message)),
-      (updatedShelf) {
-        // Update the shelf in current state
-        if (_state is ShelvesLoaded) {
-          final currentState = _state as ShelvesLoaded;
-          final updatedShelves = currentState.shelves.map((shelf) {
-            return shelf.key == shelfKey ? updatedShelf : shelf;
-          }).toList();
-          _emit(currentState.copyWith(shelves: updatedShelves));
-        }
-      },
-    );
+    result.fold((failure) => _emit(ShelvesError(failure.message)), (
+      updatedShelf,
+    ) {
+      // Update the shelf in current state
+      if (_state is ShelvesLoaded) {
+        final currentState = _state as ShelvesLoaded;
+        final updatedShelves = currentState.shelves.map((shelf) {
+          return shelf.key == shelfKey ? updatedShelf : shelf;
+        }).toList();
+        _emit(currentState.copyWith(shelves: updatedShelves));
+      }
+    });
   }
 
   /// Refresh user loans from server
@@ -871,10 +927,7 @@ class ShelvesNotifier extends ChangeNotifier {
 
   /// Initialize - load shelves and loans on app start
   Future<void> initialize() async {
-    await Future.wait([
-      loadShelves(),
-      refreshUserLoans(),
-    ]);
+    await Future.wait([loadShelves(), refreshUserLoans()]);
 
     // Cleanup orphaned visual adjustments in the background
     _cleanupOrphanedVisualAdjustments();
@@ -903,9 +956,12 @@ class ShelvesNotifier extends ChangeNotifier {
     if (validBookIds.isEmpty) return;
 
     try {
-      final removedCount = await visualAdjustmentsService.cleanupOrphanedAdjustments(validBookIds);
+      final removedCount = await visualAdjustmentsService
+          .cleanupOrphanedAdjustments(validBookIds);
       if (removedCount > 0) {
-        LoggingService.debug('Cleaned up $removedCount orphaned visual adjustment(s)');
+        LoggingService.debug(
+          'Cleaned up $removedCount orphaned visual adjustment(s)',
+        );
       }
     } catch (e) {
       LoggingService.warning('Error cleaning up visual adjustments: $e');
@@ -916,7 +972,9 @@ class ShelvesNotifier extends ChangeNotifier {
   Future<void> _processRedirectCandidates() async {
     if (_state is! ShelvesLoaded) return;
 
-    LoggingService.error('DEBUG: _processRedirectCandidates() - Starting background redirect check');
+    LoggingService.debug(
+      '_processRedirectCandidates() - Starting background redirect check',
+    );
     final currentState = _state as ShelvesLoaded;
     bool hasChanges = false;
     final updatedShelves = List<Shelf>.from(currentState.shelves);
@@ -925,19 +983,31 @@ class ShelvesNotifier extends ChangeNotifier {
 
     for (int shelfIndex = 0; shelfIndex < updatedShelves.length; shelfIndex++) {
       final shelf = updatedShelves[shelfIndex];
-      LoggingService.error('DEBUG: Checking shelf ${shelf.key} with ${shelf.books.length} books');
+      LoggingService.debug(
+        'Checking shelf ${shelf.key} with ${shelf.books.length} books',
+      );
 
       for (int bookIndex = 0; bookIndex < shelf.books.length; bookIndex++) {
         final book = shelf.books[bookIndex];
         totalBooks++;
 
         // Debug: Print book details for books with suspicious metadata
-        if (book.title == 'Unknown Title' || book.authors.isEmpty || book.coverImageId == null) {
-          LoggingService.error('DEBUG: Book ${bookIndex + 1}/${shelf.books.length}:');
-          LoggingService.error('DEBUG:   workId: "${book.workId}" (isEmpty: ${book.workId.isEmpty})');
-          LoggingService.error('DEBUG:   title: "${book.title}" (== "Unknown Title": ${book.title == 'Unknown Title'})');
-          LoggingService.error('DEBUG:   authors: ${book.authors} (isEmpty: ${book.authors.isEmpty})');
-          LoggingService.error('DEBUG:   coverImageId: ${book.coverImageId} (== null: ${book.coverImageId == null})');
+        if (book.title == 'Unknown Title' ||
+            book.authors.isEmpty ||
+            book.coverImageId == null) {
+          LoggingService.debug('Book ${bookIndex + 1}/${shelf.books.length}:');
+          LoggingService.debug(
+            '  workId: "${book.workId}" (isEmpty: ${book.workId.isEmpty})',
+          );
+          LoggingService.debug(
+            '  title: "${book.title}" (== "Unknown Title": ${book.title == 'Unknown Title'})',
+          );
+          LoggingService.debug(
+            '  authors: ${book.authors} (isEmpty: ${book.authors.isEmpty})',
+          );
+          LoggingService.debug(
+            '  coverImageId: ${book.coverImageId} (== null: ${book.coverImageId == null})',
+          );
         }
 
         // Check if this book needs redirect checking
@@ -949,11 +1019,13 @@ class ShelvesNotifier extends ChangeNotifier {
             book.coverImageId == null) {
           candidateCount++;
           try {
-            LoggingService.error('DEBUG: ===== REDIRECT CANDIDATE #$candidateCount DETECTED =====');
-            LoggingService.error('DEBUG: Work ID: ${book.workId}');
-            LoggingService.error('DEBUG: Edition ID: ${book.editionId}');
-            LoggingService.error('DEBUG: Shelf: ${shelf.key}');
-            LoggingService.error('DEBUG: Checking redirect for work ${book.workId}');
+            LoggingService.debug(
+              '===== REDIRECT CANDIDATE #$candidateCount DETECTED =====',
+            );
+            LoggingService.debug('Work ID: ${book.workId}');
+            LoggingService.debug('Edition ID: ${book.editionId}');
+            LoggingService.debug('Shelf: ${shelf.key}');
+            LoggingService.debug('Checking redirect for work ${book.workId}');
 
             // Resolve the redirect
             final result = await bookDetailsDataSource.resolveWorkRedirect(
@@ -964,37 +1036,47 @@ class ShelvesNotifier extends ChangeNotifier {
             final workData = result['workData'] as Map<String, dynamic>?;
 
             if (redirectedWorkId != null && workData != null) {
-              LoggingService.error('DEBUG: ===== REDIRECT RESOLUTION =====');
-              LoggingService.error('DEBUG: Old work ID: ${book.workId}');
-              LoggingService.error('DEBUG: New work ID: $redirectedWorkId');
-              LoggingService.error('DEBUG: Edition ID: ${book.editionId}');
-              LoggingService.error('DEBUG: Shelf: ${shelf.key}');
+              LoggingService.debug('===== REDIRECT RESOLUTION =====');
+              LoggingService.debug('Old work ID: ${book.workId}');
+              LoggingService.debug('New work ID: $redirectedWorkId');
+              LoggingService.debug('Edition ID: ${book.editionId}');
+              LoggingService.debug('Shelf: ${shelf.key}');
 
               // Extract cover from work data
               int? coverImageId;
               String? coverEditionId;
-              LoggingService.error('DEBUG: Work data covers field: ${workData['covers']}');
-              if (workData['covers'] != null && (workData['covers'] as List).isNotEmpty) {
+              LoggingService.debug(
+                'Work data covers field: ${workData['covers']}',
+              );
+              if (workData['covers'] != null &&
+                  (workData['covers'] as List).isNotEmpty) {
                 coverImageId = (workData['covers'] as List).first as int?;
-                LoggingService.error('DEBUG: Extracted cover ID: $coverImageId');
+                LoggingService.debug('Extracted cover ID: $coverImageId');
                 // Clear coverEditionId so the new coverImageId will be used
                 coverEditionId = null;
-                LoggingService.error('DEBUG: Set coverEditionId to null');
+                LoggingService.debug('Set coverEditionId to null');
               } else {
                 // Keep existing cover data if work has no covers
                 coverImageId = book.coverImageId;
                 coverEditionId = book.coverEditionId;
-                LoggingService.error('DEBUG: No covers in work data, keeping old cover data');
+                LoggingService.debug(
+                  'No covers in work data, keeping old cover data',
+                );
               }
-              LoggingService.error('DEBUG: Old book cover - imageId: ${book.coverImageId}, editionId: ${book.coverEditionId}');
-              LoggingService.error('DEBUG: New book cover - imageId: $coverImageId, editionId: $coverEditionId');
+              LoggingService.debug(
+                'Old book cover - imageId: ${book.coverImageId}, editionId: ${book.coverEditionId}',
+              );
+              LoggingService.debug(
+                'New book cover - imageId: $coverImageId, editionId: $coverEditionId',
+              );
 
               // Extract updated book data from work
               final updatedBook = Book(
                 editionId: book.editionId,
                 workId: redirectedWorkId,
                 title: workData['title'] as String? ?? book.title,
-                authors: (workData['authors'] as List?)
+                authors:
+                    (workData['authors'] as List?)
                         ?.map((a) => a['name'] as String? ?? '')
                         .where((name) => name.isNotEmpty)
                         .toList() ??
@@ -1012,9 +1094,15 @@ class ShelvesNotifier extends ChangeNotifier {
                 lastModified: DateTime.now(),
               );
 
-              LoggingService.error('DEBUG: Updated book created - title: "${updatedBook.title}"');
-              LoggingService.error('DEBUG: Updated book coverImageUrl: ${updatedBook.coverImageUrl}');
-              LoggingService.error('DEBUG: Updated book coverImageUrls: ${updatedBook.coverImageUrls}');
+              LoggingService.debug(
+                'Updated book created - title: "${updatedBook.title}"',
+              );
+              LoggingService.debug(
+                'Updated book coverImageUrl: ${updatedBook.coverImageUrl}',
+              );
+              LoggingService.debug(
+                'Updated book coverImageUrls: ${updatedBook.coverImageUrls}',
+              );
 
               // Update the book in the shelf locally
               final updatedBooks = List<Book>.from(shelf.books);
@@ -1032,7 +1120,9 @@ class ShelvesNotifier extends ChangeNotifier {
               );
             }
           } catch (e) {
-            LoggingService.error('DEBUG: Error processing redirect for ${book.workId}: $e');
+            LoggingService.debug(
+              'Error processing redirect for ${book.workId}: $e',
+            );
             // Continue with other books even if one fails
           }
         }
@@ -1041,24 +1131,36 @@ class ShelvesNotifier extends ChangeNotifier {
 
     // If we made any changes, emit the updated state
     if (hasChanges) {
-      LoggingService.error('DEBUG: _processRedirectCandidates() - hasChanges=true, preparing to emit');
+      LoggingService.debug(
+        '_processRedirectCandidates() - hasChanges=true, preparing to emit',
+      );
 
       // Ensure we're on a fresh microtask and state is still loaded
       await Future.delayed(Duration.zero);
 
       if (_state is ShelvesLoaded) {
-        LoggingService.error('DEBUG: _processRedirectCandidates() - Emitting updated state with ${updatedShelves.length} shelves');
+        LoggingService.debug(
+          '_processRedirectCandidates() - Emitting updated state with ${updatedShelves.length} shelves',
+        );
         final latestState = _state as ShelvesLoaded;
         _emit(latestState.copyWith(shelves: updatedShelves));
-        LoggingService.error('DEBUG: _processRedirectCandidates() - State emitted, notifyListeners() called');
+        LoggingService.debug(
+          '_processRedirectCandidates() - State emitted, notifyListeners() called',
+        );
       } else {
-        LoggingService.error('DEBUG: _processRedirectCandidates() - State is no longer ShelvesLoaded, skipping emit');
+        LoggingService.debug(
+          '_processRedirectCandidates() - State is no longer ShelvesLoaded, skipping emit',
+        );
       }
     } else {
-      LoggingService.error('DEBUG: _processRedirectCandidates() - NOT emitting: hasChanges=false');
+      LoggingService.debug(
+        '_processRedirectCandidates() - NOT emitting: hasChanges=false',
+      );
     }
 
-    LoggingService.error('DEBUG: _processRedirectCandidates() - Complete. Checked $totalBooks books across ${updatedShelves.length} shelves, found $candidateCount candidates, updated ${hasChanges ? "some" : "none"}');
+    LoggingService.debug(
+      '_processRedirectCandidates() - Complete. Checked $totalBooks books across ${updatedShelves.length} shelves, found $candidateCount candidates, updated ${hasChanges ? "some" : "none"}',
+    );
   }
 
   /// Update a redirected book on the server (two-step process)
@@ -1069,7 +1171,9 @@ class ShelvesNotifier extends ChangeNotifier {
     required String shelfKey,
   }) async {
     try {
-      LoggingService.error('DEBUG: Step 1 - Removing old work (${oldBook.workId}) from shelf');
+      LoggingService.debug(
+        'Step 1 - Removing old work (${oldBook.workId}) from shelf',
+      );
 
       // Step 1: Remove old work from shelf
       // Call remote data source directly to avoid state change race condition
@@ -1079,8 +1183,10 @@ class ShelvesNotifier extends ChangeNotifier {
         targetShelfKey: '-1', // Remove from all shelves
       );
 
-      LoggingService.error('DEBUG: Step 1 SUCCESS - Old work removed');
-      LoggingService.error('DEBUG: Step 2 - Adding new work (${newBook.workId}) to shelf $shelfKey');
+      LoggingService.debug('Step 1 SUCCESS - Old work removed');
+      LoggingService.debug(
+        'Step 2 - Adding new work (${newBook.workId}) to shelf $shelfKey',
+      );
 
       // Step 2: Add new work to shelf
       // Call remote data source directly to avoid state change race condition
@@ -1090,15 +1196,23 @@ class ShelvesNotifier extends ChangeNotifier {
         targetShelfKey: shelfKey,
       );
 
-      LoggingService.error('DEBUG: Step 2 SUCCESS - New work added');
-      LoggingService.error('DEBUG: ===== Redirect resolution complete: ${oldBook.workId} → ${newBook.workId} =====');
+      LoggingService.debug('Step 2 SUCCESS - New work added');
+      LoggingService.debug(
+        '===== Redirect resolution complete: ${oldBook.workId} → ${newBook.workId} =====',
+      );
     } catch (e, stackTrace) {
-      LoggingService.error('DEBUG: ===== ERROR in _updateRedirectedBookOnServer =====');
-      LoggingService.error('DEBUG: Exception: $e');
-      LoggingService.error('DEBUG: Stack trace: $stackTrace');
-      LoggingService.error('DEBUG: Old work: ${oldBook.workId}, New work: ${newBook.workId}');
-      LoggingService.error('DEBUG: This may leave the book in an inconsistent state on the server');
-      LoggingService.error('DEBUG: ===== END ERROR =====');
+      LoggingService.debug(
+        '===== ERROR in _updateRedirectedBookOnServer =====',
+      );
+      LoggingService.debug('Exception: $e');
+      LoggingService.debug('Stack trace: $stackTrace');
+      LoggingService.debug(
+        'Old work: ${oldBook.workId}, New work: ${newBook.workId}',
+      );
+      LoggingService.debug(
+        'This may leave the book in an inconsistent state on the server',
+      );
+      LoggingService.debug('===== END ERROR =====');
     }
   }
 
@@ -1110,11 +1224,13 @@ class ShelvesNotifier extends ChangeNotifier {
     if (currentState is! ShelvesLoaded) return;
 
     // Set loading state
-    _emit(currentState.copyWith(
-      isLoadingListContents: true,
-      selectedListUrl: listUrl,
-      listBooks: [], // Clear previous books
-    ));
+    _emit(
+      currentState.copyWith(
+        isLoadingListContents: true,
+        selectedListUrl: listUrl,
+        listBooks: [], // Clear previous books
+      ),
+    );
 
     // Fetch list seeds
     final result = await getListSeedsUseCase(
@@ -1126,20 +1242,24 @@ class ShelvesNotifier extends ChangeNotifier {
       (failure) {
         // On error, keep list selected but show empty books
         if (_state is ShelvesLoaded) {
-          _emit((_state as ShelvesLoaded).copyWith(
-            isLoadingListContents: false,
-            listBooks: [],
-          ));
+          _emit(
+            (_state as ShelvesLoaded).copyWith(
+              isLoadingListContents: false,
+              listBooks: [],
+            ),
+          );
         }
         LoggingService.warning('Error loading list seeds: ${failure.message}');
       },
       (books) {
         // Update state with loaded books
         if (_state is ShelvesLoaded) {
-          _emit((_state as ShelvesLoaded).copyWith(
-            isLoadingListContents: false,
-            listBooks: books,
-          ));
+          _emit(
+            (_state as ShelvesLoaded).copyWith(
+              isLoadingListContents: false,
+              listBooks: books,
+            ),
+          );
 
           // Persist selection
           _persistListSelection(listUrl);
@@ -1153,11 +1273,13 @@ class ShelvesNotifier extends ChangeNotifier {
     final currentState = _state;
     if (currentState is! ShelvesLoaded) return;
 
-    _emit(currentState.copyWith(
-      clearSelectedList: true,
-      listBooks: [],
-      isLoadingListContents: false,
-    ));
+    _emit(
+      currentState.copyWith(
+        clearSelectedList: true,
+        listBooks: [],
+        isLoadingListContents: false,
+      ),
+    );
 
     // Clear persisted selection
     _persistListSelection(null);
@@ -1181,7 +1303,9 @@ class ShelvesNotifier extends ChangeNotifier {
       // Access local data source through repository
       // The repository has access to the local data source
       if (repository is ShelfRepositoryImpl) {
-        await (repository as dynamic).localDataSource.updateSelectedListUrl(listUrl);
+        await (repository as dynamic).localDataSource.updateSelectedListUrl(
+          listUrl,
+        );
       }
     } catch (e) {
       LoggingService.warning('Error persisting list selection: $e');
@@ -1193,7 +1317,8 @@ class ShelvesNotifier extends ChangeNotifier {
     try {
       // Access local data source through repository
       if (repository is ShelfRepositoryImpl) {
-        return await (repository as dynamic).localDataSource.getSelectedListUrl();
+        return await (repository as dynamic).localDataSource
+            .getSelectedListUrl();
       }
       return null;
     } catch (e) {
@@ -1207,14 +1332,17 @@ class ShelvesNotifier extends ChangeNotifier {
     // Only restore if we're in a loaded state with no current selection
     final currentState = _state;
     if (currentState is! ShelvesLoaded) return;
-    if (currentState.selectedListUrl != null) return; // Already have a selection
+    if (currentState.selectedListUrl != null)
+      return; // Already have a selection
 
     // Load persisted selection
     final persistedUrl = await _loadPersistedListSelection();
     if (persistedUrl == null) return;
 
     // Verify the persisted URL matches one of the loaded book lists
-    final matchingList = currentState.bookLists.any((list) => list.url == persistedUrl);
+    final matchingList = currentState.bookLists.any(
+      (list) => list.url == persistedUrl,
+    );
     if (!matchingList) {
       // Persisted list no longer exists, clear the preference
       await _persistListSelection(null);
@@ -1261,11 +1389,10 @@ class ShelvesNotifier extends ChangeNotifier {
   }
 
   /// Remove a book from the currently selected list
-  Future<void> removeBookFromCurrentList({
-    required Book book,
-  }) async {
+  Future<void> removeBookFromCurrentList({required Book book}) async {
     final currentState = _state;
-    if (currentState is! ShelvesLoaded || currentState.selectedListUrl == null) {
+    if (currentState is! ShelvesLoaded ||
+        currentState.selectedListUrl == null) {
       LoggingService.warning('Cannot remove book: no list selected');
       return;
     }

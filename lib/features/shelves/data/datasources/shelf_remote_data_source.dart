@@ -67,9 +67,7 @@ class ShelfRemoteDataSource {
   ///
   /// Returns [ShelfModel] for the requested shelf
   /// Throws [ServerException], [NetworkException], or [AuthException]
-  Future<ShelfModel> fetchSingleShelf({
-    required String shelfKey,
-  }) async {
+  Future<ShelfModel> fetchSingleShelf({required String shelfKey}) async {
     try {
       // Ensure cookies are loaded from storage
       await authDataSource.ensureCookiesLoaded();
@@ -104,12 +102,11 @@ class ShelfRemoteDataSource {
     }
 
     // Fetch first page to get total count
-    final baseUrl = '${ApiConstants.openLibraryBaseUrl}/people/$userId/books/$shelfKey.json';
+    final baseUrl =
+        '${ApiConstants.openLibraryBaseUrl}/people/$userId/books/$shelfKey.json';
     final firstResponse = await dioClient.get(
       baseUrl,
-      options: Options(
-        headers: {'Cookie': cookieHeader},
-      ),
+      options: Options(headers: {'Cookie': cookieHeader}),
     );
 
     if (firstResponse.statusCode != 200) {
@@ -132,23 +129,25 @@ class ShelfRemoteDataSource {
       final pageSize = firstPageEntries.length; // Usually 100
       final totalPages = (totalCount / pageSize).ceil();
 
-      LoggingService.error('DEBUG: Fetching $totalPages pages for $shelfKey (total: $totalCount books)');
+      LoggingService.debug(
+        'Fetching $totalPages pages for $shelfKey (total: $totalCount books)',
+      );
 
       // Fetch remaining pages (starting from page 2)
       for (int page = 2; page <= totalPages; page++) {
         try {
           final pageResponse = await dioClient.get(
             '$baseUrl?page=$page',
-            options: Options(
-              headers: {'Cookie': cookieHeader},
-            ),
+            options: Options(headers: {'Cookie': cookieHeader}),
           );
 
           if (pageResponse.statusCode == 200) {
             final pageData = pageResponse.data as Map<String, dynamic>;
             final pageEntries = pageData['reading_log_entries'] as List? ?? [];
             allEntries.addAll(pageEntries);
-            LoggingService.error('DEBUG: Fetched page $page: ${pageEntries.length} books');
+            LoggingService.debug(
+              'Fetched page $page: ${pageEntries.length} books',
+            );
           }
         } catch (e) {
           LoggingService.error('Error fetching page $page for $shelfKey: $e');
@@ -157,7 +156,9 @@ class ShelfRemoteDataSource {
       }
     }
 
-    LoggingService.error('DEBUG: Total books fetched for $shelfKey: ${allEntries.length}/$totalCount');
+    LoggingService.debug(
+      'Total books fetched for $shelfKey: ${allEntries.length}/$totalCount',
+    );
 
     // Create modified response data with all entries
     final completeData = Map<String, dynamic>.from(firstData);
@@ -175,7 +176,9 @@ class ShelfRemoteDataSource {
       final entries = data['reading_log_entries'] as List;
       for (var entry in entries) {
         try {
-          final bookModel = BookModel.fromShelfData(entry as Map<String, dynamic>);
+          final bookModel = BookModel.fromShelfData(
+            entry as Map<String, dynamic>,
+          );
           books.add(bookModel);
         } catch (e) {
           LoggingService.error('Error parsing book entry: $e');
@@ -224,12 +227,8 @@ class ShelfRemoteDataSource {
       },
     };
 
-    return shelfConfigs[key] ?? {
-      'name': key,
-      'olName': key,
-      'olId': 0,
-      'displayOrder': 99,
-    };
+    return shelfConfigs[key] ??
+        {'name': key, 'olName': key, 'olId': 0, 'displayOrder': 99};
   }
 
   /// Extract user ID from cookie header
@@ -268,7 +267,8 @@ class ShelfRemoteDataSource {
       }
 
       // OpenLibrary API call to update bookshelves
-      final url = '${ApiConstants.openLibraryBaseUrl}/works/$workId/bookshelves.json';
+      final url =
+          '${ApiConstants.openLibraryBaseUrl}/works/$workId/bookshelves.json';
 
       // Build form data - only include edition_id if provided
       final formDataMap = {
@@ -285,69 +285,67 @@ class ShelfRemoteDataSource {
 
       final formData = FormData.fromMap(formDataMap);
 
-      LoggingService.debug('DEBUG: ===== API CALL: moveBookToShelf =====');
-      LoggingService.debug('DEBUG: POST $url');
-      LoggingService.debug('DEBUG: Parameters:');
-      LoggingService.debug('DEBUG:   workId: $workId');
-      LoggingService.debug('DEBUG:   editionId: ${editionId ?? "(null)"}');
-      LoggingService.debug('DEBUG:   targetShelfKey: $targetShelfKey');
-      LoggingService.debug('DEBUG:   shelfId: $shelfId');
-      LoggingService.debug('DEBUG: POST Body (FormData):');
-      LoggingService.debug('DEBUG:   action=add');
-      LoggingService.debug('DEBUG:   redir=false');
-      LoggingService.debug('DEBUG:   bookshelf_id=$shelfId');
+      LoggingService.debug('===== API CALL: moveBookToShelf =====');
+      LoggingService.debug('POST $url');
+      LoggingService.debug('Parameters:');
+      LoggingService.debug('  workId: $workId');
+      LoggingService.debug('  editionId: ${editionId ?? "(null)"}');
+      LoggingService.debug('  targetShelfKey: $targetShelfKey');
+      LoggingService.debug('  shelfId: $shelfId');
+      LoggingService.debug('POST Body (FormData):');
+      LoggingService.debug('  action=add');
+      LoggingService.debug('  redir=false');
+      LoggingService.debug('  bookshelf_id=$shelfId');
       if (editionId != null && editionId.isNotEmpty) {
-        LoggingService.debug('DEBUG:   edition_id=/books/$editionId');
+        LoggingService.debug('  edition_id=/books/$editionId');
       } else {
-        LoggingService.debug('DEBUG:   edition_id=(omitted - no valid edition ID)');
+        LoggingService.debug('  edition_id=(omitted - no valid edition ID)');
       }
-      LoggingService.debug('DEBUG:   dont_remove=true');
-      LoggingService.debug('DEBUG: Headers:');
-      LoggingService.debug('DEBUG:   Cookie: ${cookieHeader.substring(0, 50)}...');
+      LoggingService.debug('  dont_remove=true');
+      LoggingService.debug('Headers:');
+      LoggingService.debug('  Cookie: ${cookieHeader.substring(0, 50)}...');
 
       final response = await dioClient.post(
         url,
         data: formData,
-        options: Options(
-          headers: {
-            'Cookie': cookieHeader,
-          },
-        ),
+        options: Options(headers: {'Cookie': cookieHeader}),
       );
 
-      LoggingService.debug('DEBUG: Response Status: ${response.statusCode}');
-      LoggingService.debug('DEBUG: Response Data: ${response.data}');
-      LoggingService.debug('DEBUG: ===== API CALL SUCCESS =====');
+      LoggingService.debug('Response Status: ${response.statusCode}');
+      LoggingService.debug('Response Data: ${response.data}');
+      LoggingService.debug('===== API CALL SUCCESS =====');
     } on AuthException {
       rethrow;
     } on DioException catch (e) {
-      LoggingService.error('DEBUG: ===== API CALL FAILED =====');
-      LoggingService.error('DEBUG: DioException Type: ${e.type}');
-      LoggingService.error('DEBUG: Error Message: ${e.message}');
-      LoggingService.error('DEBUG: Request URL: ${e.requestOptions.uri}');
-      LoggingService.error('DEBUG: Request Method: ${e.requestOptions.method}');
-      LoggingService.error('DEBUG: Request Data: ${e.requestOptions.data}');
+      LoggingService.debug('===== API CALL FAILED =====');
+      LoggingService.debug('DioException Type: ${e.type}');
+      LoggingService.debug('Error Message: ${e.message}');
+      LoggingService.debug('Request URL: ${e.requestOptions.uri}');
+      LoggingService.debug('Request Method: ${e.requestOptions.method}');
+      LoggingService.debug('Request Data: ${e.requestOptions.data}');
       if (e.response != null) {
-        LoggingService.error('DEBUG: Response Status Code: ${e.response!.statusCode}');
-        LoggingService.error('DEBUG: Response Status Message: ${e.response!.statusMessage}');
-        LoggingService.error('DEBUG: Response Data: ${e.response!.data}');
-        LoggingService.error('DEBUG: Response Headers: ${e.response!.headers}');
+        LoggingService.debug('Response Status Code: ${e.response!.statusCode}');
+        LoggingService.debug(
+          'Response Status Message: ${e.response!.statusMessage}',
+        );
+        LoggingService.debug('Response Data: ${e.response!.data}');
+        LoggingService.debug('Response Headers: ${e.response!.headers}');
       } else {
-        LoggingService.error('DEBUG: No response received (connection/timeout error)');
+        LoggingService.debug('No response received (connection/timeout error)');
       }
-      LoggingService.error('DEBUG: Stack Trace: ${e.stackTrace}');
-      LoggingService.error('DEBUG: ===== END ERROR =====');
+      LoggingService.debug('Stack Trace: ${e.stackTrace}');
+      LoggingService.debug('===== END ERROR =====');
 
       if (e.response?.statusCode == 401) {
         throw const AuthException('Unauthorized - please login again');
       }
       throw NetworkException(e.message ?? 'Network error moving book');
     } catch (e, stackTrace) {
-      LoggingService.error('DEBUG: ===== UNEXPECTED ERROR =====');
-      LoggingService.error('DEBUG: Exception Type: ${e.runtimeType}');
-      LoggingService.error('DEBUG: Exception: $e');
-      LoggingService.error('DEBUG: Stack Trace: $stackTrace');
-      LoggingService.error('DEBUG: ===== END ERROR =====');
+      LoggingService.debug('===== UNEXPECTED ERROR =====');
+      LoggingService.debug('Exception Type: ${e.runtimeType}');
+      LoggingService.debug('Exception: $e');
+      LoggingService.debug('Stack Trace: $stackTrace');
+      LoggingService.debug('===== END ERROR =====');
       throw ServerException('Failed to move book: $e');
     }
   }
@@ -355,9 +353,7 @@ class ShelfRemoteDataSource {
   /// Remove book from shelf via API
   ///
   /// Throws [ServerException], [NetworkException], or [AuthException]
-  Future<void> removeBookFromShelf({
-    required String workId,
-  }) async {
+  Future<void> removeBookFromShelf({required String workId}) async {
     try {
       // Ensure cookies are loaded from storage
       await authDataSource.ensureCookiesLoaded();
@@ -416,12 +412,11 @@ class ShelfRemoteDataSource {
       }
 
       // Fetch lists
-      final url = '${ApiConstants.openLibraryBaseUrl}/people/$userId/lists.json';
+      final url =
+          '${ApiConstants.openLibraryBaseUrl}/people/$userId/lists.json';
       final response = await dioClient.get(
         url,
-        options: Options(
-          headers: {'Cookie': cookieHeader},
-        ),
+        options: Options(headers: {'Cookie': cookieHeader}),
       );
 
       if (response.statusCode != 200) {
@@ -475,9 +470,7 @@ class ShelfRemoteDataSource {
       final url = '${ApiConstants.openLibraryBaseUrl}$seedsUrl';
       final response = await dioClient.get(
         url,
-        options: Options(
-          headers: {'Cookie': cookieHeader},
-        ),
+        options: Options(headers: {'Cookie': cookieHeader}),
       );
 
       if (response.statusCode != 200) {
@@ -585,7 +578,8 @@ class ShelfRemoteDataSource {
         final Map<String, dynamic> editionData;
         if (editionResponse.data is String) {
           editionData =
-              jsonDecode(editionResponse.data as String) as Map<String, dynamic>;
+              jsonDecode(editionResponse.data as String)
+                  as Map<String, dynamic>;
         } else {
           editionData = editionResponse.data as Map<String, dynamic>;
         }
@@ -626,13 +620,16 @@ class ShelfRemoteDataSource {
   }
 
   /// Batch fetch works using Search API
-  Future<List<BookModel>> _batchFetchWorks(List<ListSeedModel> workSeeds) async {
+  Future<List<BookModel>> _batchFetchWorks(
+    List<ListSeedModel> workSeeds,
+  ) async {
     if (workSeeds.isEmpty) return [];
 
     final books = <BookModel>[];
 
     // Define fields we need from search API
-    const fields = 'key,title,author_name,cover_i,cover_edition_key,'
+    const fields =
+        'key,title,author_name,cover_i,cover_edition_key,'
         'edition_key,first_publish_year,publisher,number_of_pages_median,'
         'isbn,first_sentence,availability,ia';
 
@@ -645,7 +642,8 @@ class ShelfRemoteDataSource {
       final keys = batch.map((s) => s.url).join(' OR ');
       final query = Uri.encodeComponent('key:($keys)');
 
-      final url = '${ApiConstants.openLibraryBaseUrl}/search.json?q=$query&fields=$fields';
+      final url =
+          '${ApiConstants.openLibraryBaseUrl}/search.json?q=$query&fields=$fields';
 
       try {
         final response = await dioClient.get(url);
@@ -680,7 +678,9 @@ class ShelfRemoteDataSource {
   }
 
   /// Batch fetch editions using Books API
-  Future<List<BookModel>> _batchFetchEditions(List<ListSeedModel> editionSeeds) async {
+  Future<List<BookModel>> _batchFetchEditions(
+    List<ListSeedModel> editionSeeds,
+  ) async {
     if (editionSeeds.isEmpty) return [];
 
     final books = <BookModel>[];
@@ -695,7 +695,8 @@ class ShelfRemoteDataSource {
           .map((s) => s.url.replaceFirst('/books/', ''))
           .join(',');
 
-      final url = '${ApiConstants.openLibraryBaseUrl}/api/books'
+      final url =
+          '${ApiConstants.openLibraryBaseUrl}/api/books'
           '?bibkeys=$bibkeys&jscmd=details&format=json';
 
       try {
@@ -722,7 +723,9 @@ class ShelfRemoteDataSource {
                   books.add(book);
                 }
               } catch (e) {
-                LoggingService.error('Error parsing books API result for ${entry.key}: $e');
+                LoggingService.error(
+                  'Error parsing books API result for ${entry.key}: $e',
+                );
               }
             }
           }
@@ -740,8 +743,8 @@ class ShelfRemoteDataSource {
   /// Handles jscmd=details format where most fields are nested under 'details'
   BookModel? _bookModelFromBooksApi(String bibkey, Map<String, dynamic> data) {
     try {
-      LoggingService.error('DEBUG: Parsing book $bibkey');
-      LoggingService.error('DEBUG: Keys in data: ${data.keys.toList()}');
+      LoggingService.debug('Parsing book $bibkey');
+      LoggingService.debug('Keys in data: ${data.keys.toList()}');
 
       // Extract edition ID from bibkey (already just the ID)
       final editionId = bibkey;
@@ -749,46 +752,55 @@ class ShelfRemoteDataSource {
       // Get details object (jscmd=details puts EVERYTHING here)
       final details = data['details'] as Map<String, dynamic>?;
       if (details != null) {
-        LoggingService.error('DEBUG: Keys in details: ${details.keys.toList()}');
+        LoggingService.debug('Keys in details: ${details.keys.toList()}');
       } else {
-        LoggingService.error('DEBUG: No details object found');
-        return null;
+        LoggingService.debug('No details object found');
       }
 
       // Extract work ID from works field (inside details in jscmd=details)
       String workId = '';
-      if (details['works'] != null && details['works'] is List) {
+      if (details != null &&
+          details['works'] != null &&
+          details['works'] is List) {
         final works = details['works'] as List;
         if (works.isNotEmpty && works[0] is Map) {
           final workData = works[0] as Map;
           if (workData['key'] != null) {
             final key = workData['key'] as String;
             workId = key.replaceFirst('/works/', '');
-            LoggingService.error('DEBUG: Extracted work ID: $workId');
+            LoggingService.debug('Extracted work ID: $workId');
           }
         }
       }
 
       // Extract title (inside details in jscmd=details)
-      final title = details['title'] as String? ?? 'Unknown Title';
-      LoggingService.error('DEBUG: Title: $title');
+      final title = details != null
+          ? (details['title'] as String? ?? 'Unknown Title')
+          : 'Unknown Title';
+      LoggingService.debug('Title: $title');
 
       // Extract authors (inside details in jscmd=details)
       List<String> authors = [];
-      if (details['authors'] != null && details['authors'] is List) {
+      if (details != null &&
+          details['authors'] != null &&
+          details['authors'] is List) {
         authors = (details['authors'] as List)
             .where((a) => a is Map && a['name'] != null)
             .map((a) => (a as Map)['name'] as String)
             .toList();
-        LoggingService.error('DEBUG: Authors: $authors');
+        LoggingService.debug('Authors: $authors');
       } else {
-        LoggingService.error('DEBUG: No authors found, details[\'authors\']: ${details['authors']}');
+        LoggingService.debug(
+          'No authors found, details[\'authors\']: ${details?['authors']}',
+        );
       }
 
       // Extract cover - in jscmd=details, covers is an array of IDs under 'details'
       int? coverImageId;
       String? coverEditionId;
-      if (details['covers'] != null && details['covers'] is List) {
+      if (details != null &&
+          details['covers'] != null &&
+          details['covers'] is List) {
         final covers = details['covers'] as List;
         if (covers.isNotEmpty) {
           coverImageId = covers[0] as int?;
@@ -796,11 +808,15 @@ class ShelfRemoteDataSource {
       }
 
       // Extract publish date (under details in jscmd=details)
-      final publishDate = details['publish_date'] as String?;
+      final publishDate = details != null
+          ? (details['publish_date'] as String?)
+          : null;
 
       // Extract publishers (under details in jscmd=details)
       String? publisher;
-      if (details['publishers'] != null && details['publishers'] is List) {
+      if (details != null &&
+          details['publishers'] != null &&
+          details['publishers'] is List) {
         final publishers = details['publishers'] as List;
         if (publishers.isNotEmpty) {
           // In jscmd=details, publishers is just an array of strings
@@ -809,28 +825,39 @@ class ShelfRemoteDataSource {
       }
 
       // Extract page count (under details in jscmd=details)
-      final numberOfPages = details['number_of_pages'] as int?;
+      final numberOfPages = details != null
+          ? (details['number_of_pages'] as int?)
+          : null;
 
       // Extract ISBNs (under details in jscmd=details)
       List<String> isbn = [];
-      if (details['identifiers'] != null && details['identifiers'] is Map) {
+      if (details != null &&
+          details['identifiers'] != null &&
+          details['identifiers'] is Map) {
         final identifiers = details['identifiers'] as Map;
         if (identifiers['isbn_10'] != null && identifiers['isbn_10'] is List) {
-          isbn.addAll((identifiers['isbn_10'] as List).map((i) => i.toString()));
+          isbn.addAll(
+            (identifiers['isbn_10'] as List).map((i) => i.toString()),
+          );
         }
         if (identifiers['isbn_13'] != null && identifiers['isbn_13'] is List) {
-          isbn.addAll((identifiers['isbn_13'] as List).map((i) => i.toString()));
+          isbn.addAll(
+            (identifiers['isbn_13'] as List).map((i) => i.toString()),
+          );
         }
       }
 
       // Extract description - check multiple possible locations
       String? description;
       // Try subtitle first (common in jscmd=details)
-      if (details['subtitle'] != null) {
+      if (details != null && details['subtitle'] != null) {
         description = details['subtitle'] as String?;
       }
       // Try excerpts
-      if (description == null && details['excerpts'] != null && details['excerpts'] is List) {
+      if (description == null &&
+          details != null &&
+          details['excerpts'] != null &&
+          details['excerpts'] is List) {
         final excerpts = details['excerpts'] as List;
         if (excerpts.isNotEmpty && excerpts[0] is Map) {
           description = (excerpts[0] as Map)['text'] as String?;
@@ -859,7 +886,9 @@ class ShelfRemoteDataSource {
   /// Batch fetch authors from list seeds
   ///
   /// Fetches authors in parallel batches to avoid rate limiting
-  Future<List<AuthorModel>> fetchAuthorsFromSeeds(List<ListSeedModel> authorSeeds) async {
+  Future<List<AuthorModel>> fetchAuthorsFromSeeds(
+    List<ListSeedModel> authorSeeds,
+  ) async {
     if (authorSeeds.isEmpty) return [];
 
     final authors = <AuthorModel>[];
@@ -903,7 +932,7 @@ class ShelfRemoteDataSource {
           // Extract the redirect location (e.g., "/authors/OL123456A")
           final location = data['location'] as String?;
           if (location != null && location.startsWith('/authors/')) {
-            LoggingService.error('DEBUG: Author $authorUrl redirects to $location');
+            LoggingService.debug('Author $authorUrl redirects to $location');
 
             // Fetch the actual author data by recursively calling this method
             return await _fetchSingleAuthor(location);
@@ -934,11 +963,7 @@ class ShelfRemoteDataSource {
 
       final response = await dioClient.get(
         '${ApiConstants.openLibraryBaseUrl}/account/loans.json',
-        options: Options(
-          headers: {
-            'Cookie': cookieHeader,
-          },
-        ),
+        options: Options(headers: {'Cookie': cookieHeader}),
       );
 
       // Parse response
@@ -954,8 +979,7 @@ class ShelfRemoteDataSource {
       if (data.containsKey('loans')) {
         final loans = data['loans'] as List;
         for (final loan in loans) {
-          final bookId = (loan['book'] as String)
-              .replaceAll('/books/', '');
+          final bookId = (loan['book'] as String).replaceAll('/books/', '');
           loansMap[bookId] = loan;
         }
       }
@@ -1001,25 +1025,24 @@ class ShelfRemoteDataSource {
       // API endpoint: POST /people/{username}/lists/{list_id}/seeds
       final url = '${ApiConstants.openLibraryBaseUrl}$listUrl/seeds';
 
-      LoggingService.error('DEBUG: Adding book to list: POST $url with seed $seed');
+      LoggingService.debug('Adding book to list: POST $url with seed $seed');
 
       final response = await dioClient.post(
         url,
         data: {
           'add': [
-            {'key': seed}
-          ]
+            {'key': seed},
+          ],
         },
         options: Options(
-          headers: {
-            'Cookie': cookieHeader,
-            'Content-Type': 'application/json',
-          },
+          headers: {'Cookie': cookieHeader, 'Content-Type': 'application/json'},
         ),
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        throw ServerException('Failed to add book to list: ${response.statusCode}');
+        throw ServerException(
+          'Failed to add book to list: ${response.statusCode}',
+        );
       }
     } on AuthException {
       rethrow;
@@ -1061,25 +1084,26 @@ class ShelfRemoteDataSource {
       // API endpoint: POST /people/{username}/lists/{list_id}/seeds
       final url = '${ApiConstants.openLibraryBaseUrl}$listUrl/seeds';
 
-      LoggingService.error('DEBUG: Removing book from list: POST $url with seed $seed');
+      LoggingService.debug(
+        'Removing book from list: POST $url with seed $seed',
+      );
 
       final response = await dioClient.post(
         url,
         data: {
           'remove': [
-            {'key': seed}
-          ]
+            {'key': seed},
+          ],
         },
         options: Options(
-          headers: {
-            'Cookie': cookieHeader,
-            'Content-Type': 'application/json',
-          },
+          headers: {'Cookie': cookieHeader, 'Content-Type': 'application/json'},
         ),
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {
-        throw ServerException('Failed to remove book from list: ${response.statusCode}');
+        throw ServerException(
+          'Failed to remove book from list: ${response.statusCode}',
+        );
       }
     } on AuthException {
       rethrow;
@@ -1087,7 +1111,9 @@ class ShelfRemoteDataSource {
       if (e.response?.statusCode == 401) {
         throw const AuthException('Unauthorized - please login again');
       }
-      throw NetworkException(e.message ?? 'Network error removing book from list');
+      throw NetworkException(
+        e.message ?? 'Network error removing book from list',
+      );
     } catch (e) {
       throw ServerException('Failed to remove book from list: $e');
     }

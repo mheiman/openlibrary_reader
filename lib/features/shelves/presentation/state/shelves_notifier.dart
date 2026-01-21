@@ -217,8 +217,9 @@ class ShelvesNotifier extends ChangeNotifier {
         : <dynamic>[];
     final shouldFetchLists = forceRefresh || currentBookLists.isEmpty;
 
-    // If force refresh and no cache, use progressive loading for better UX
-    if (forceRefresh && _state is! ShelvesLoaded) {
+    // Use progressive loading for better UX when we don't have loaded shelves yet
+    // This covers first login, force refresh, and any case where shelves aren't cached
+    if (_state is! ShelvesLoaded) {
       await _loadShelvesProgressively(shouldFetchLists);
       return;
     }

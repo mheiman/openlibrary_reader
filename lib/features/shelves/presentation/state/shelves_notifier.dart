@@ -6,6 +6,7 @@ import 'dart:async';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/services/logging_service.dart';
+import '../../../../core/services/visual_adjustments_service.dart';
 import '../../../authentication/presentation/state/auth_notifier.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
 import '../../../book_details/data/datasources/book_details_remote_data_source.dart';
@@ -35,6 +36,7 @@ class ShelvesNotifier extends ChangeNotifier {
   final BookDetailsRemoteDataSource bookDetailsDataSource;
   final ShelfRemoteDataSource shelfRemoteDataSource;
   final AuthNotifier authNotifier;
+  final VisualAdjustmentsService visualAdjustmentsService;
 
   ShelvesState _state = const ShelvesInitial();
   ShelvesState get state => _state;
@@ -67,6 +69,7 @@ class ShelvesNotifier extends ChangeNotifier {
     required this.bookDetailsDataSource,
     required this.shelfRemoteDataSource,
     required this.authNotifier,
+    required this.visualAdjustmentsService,
   }) {
     // Listen to auth state changes to detect login
     authNotifier.addListener(_syncAuthStateChanged);
@@ -868,6 +871,41 @@ class ShelvesNotifier extends ChangeNotifier {
 
     // Process any redirect candidates in the background
     _processRedirectCandidates();
+
+    // Cleanup orphaned visual adjustments in the background
+    _cleanupOrphanedVisualAdjustments();
+  }
+
+  /// Cleanup visual adjustments for books no longer in any shelf
+  Future<void> _cleanupOrphanedVisualAdjustments() async {
+    if (_state is! ShelvesLoaded) return;
+
+    final currentState = _state as ShelvesLoaded;
+
+    // Collect all book IDs from all shelves
+    final validBookIds = <String>{};
+    for (final shelf in currentState.shelves) {
+      for (final book in shelf.books) {
+        // Add all possible book identifiers that might be used
+        if (book.editionId.isNotEmpty) {
+          validBookIds.add(book.editionId);
+        }
+        if (book.workId.isNotEmpty) {
+          validBookIds.add(book.workId);
+        }
+      }
+    }
+
+    if (validBookIds.isEmpty) return;
+
+    try {
+      final removedCount = await visualAdjustmentsService.cleanupOrphanedAdjustments(validBookIds);
+      if (removedCount > 0) {
+        LoggingService.debug('Cleaned up $removedCount orphaned visual adjustment(s)');
+      }
+    } catch (e) {
+      LoggingService.warning('Error cleaning up visual adjustments: $e');
+    }
   }
 
   /// Process books that may be redirected works (background task)

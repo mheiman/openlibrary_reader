@@ -119,6 +119,40 @@ function setVisualAdjustments(optionString, depth=0) {
     }
 }
 
+// Apply saved visual adjustments from Dart
+function applyVisualAdjustments(adjustments, depth=0) {
+    if (depth > 10) {
+        console.log('applyVisualAdjustments: max depth reached');
+        return;
+    }
+    try {
+        const theater = $("ia-book-theater")[0];
+        if (!theater || !theater.shadowRoot) {
+            setTimeout(function() { applyVisualAdjustments(adjustments, depth + 1); }, 500);
+            return;
+        }
+        const bookNavigator = theater.shadowRoot.firstElementChild.shadowRoot.firstElementChild.firstElementChild.getElementsByTagName('book-navigator')[0];
+        if (!bookNavigator || !bookNavigator.menuProviders || !bookNavigator.menuProviders['visualAdjustments']) {
+            setTimeout(function() { applyVisualAdjustments(adjustments, depth + 1); }, 500);
+            return;
+        }
+
+        const vaProvider = bookNavigator.menuProviders['visualAdjustments'];
+        if (adjustments.options) {
+            vaProvider.component.values[0] = adjustments.options;
+        }
+        if (adjustments.activeCount !== undefined) {
+            vaProvider.activeCount = adjustments.activeCount;
+        }
+        // Trigger the adjustment change to apply the settings
+        vaProvider.onAdjustmentChange({detail: adjustments});
+        console.log('Visual adjustments applied successfully');
+    } catch (e) {
+        console.log('applyVisualAdjustments error: ' + e);
+        setTimeout(function() { applyVisualAdjustments(adjustments, depth + 1); }, 500);
+    }
+}
+
 document.addEventListener('BookReader:PostInit', (e) => {
     OLReader.postMessage(JSON.stringify({type: 'PostInit'}));
     console.log('BookReader:PostInit');
@@ -168,6 +202,14 @@ document.addEventListener('IABookReader:BrowsingHasExpired', (e) => {
 
 document.addEventListener('visualAdjustmentOptionChanged', (e) => {
     OLReader.postMessage(JSON.stringify({type: 'visualAdjustmentOptionChanged', detail: e.detail }));
+    // Also send in format for saving/restoring
+    OLReader.postMessage(JSON.stringify({
+        type: 'VisualAdjustmentsChanged',
+        adjustments: {
+            options: e.detail.options,
+            activeCount: e.detail.activeCount
+        }
+    }));
 });
 
 /* Handle case where error message loads instead of Bookreader */

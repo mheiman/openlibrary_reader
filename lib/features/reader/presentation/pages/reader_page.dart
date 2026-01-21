@@ -10,6 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/navigation_extensions.dart';
+import '../../../../core/services/visual_adjustments_service.dart';
 import '../../../authentication/data/datasources/auth_remote_data_source.dart';
 import '../../../settings/presentation/state/settings_notifier.dart';
 import '../../../settings/presentation/state/settings_state.dart';
@@ -41,6 +42,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   late final ReaderNotifier _notifier;
   late final AuthRemoteDataSource _authDataSource;
   late final SettingsNotifier _settingsNotifier;
+  late final VisualAdjustmentsService _visualAdjustmentsService;
   InAppWebViewController? _webViewController;
 
   bool _isLoading = true;
@@ -71,6 +73,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     _notifier = getIt<ReaderNotifier>();
     _authDataSource = getIt<AuthRemoteDataSource>();
     _settingsNotifier = getIt<SettingsNotifier>();
+    _visualAdjustmentsService = getIt<VisualAdjustmentsService>();
     _overlayEntry = _createOverlayEntry();
 
     // Load settings if not already loaded
@@ -665,6 +668,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           setState(() {
             _isLoading = false;
           });
+          // Apply saved visual adjustments after reader is initialized
+          _loadAndApplyVisualAdjustments();
           break;
         case 'NoReader':
           _showError('Book reader could not be loaded');
@@ -674,6 +679,13 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             _setFullScreenFromJs(false);
           }
           //_showError('Your loan has expired');
+          break;
+        case 'VisualAdjustmentsChanged':
+          // Save the visual adjustments when they change
+          final adjustments = message['adjustments'] as Map<String, dynamic>?;
+          if (adjustments != null) {
+            _saveVisualAdjustments(adjustments);
+          }
           break;
       }
     } catch (e) {
@@ -744,5 +756,40 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         },
       ),
     );
+  }
+
+  /// Load and apply saved visual adjustments for the current book
+  Future<void> _loadAndApplyVisualAdjustments() async {
+    if (_webViewController == null) return;
+
+    final adjustments = _visualAdjustmentsService.loadAdjustments(widget.bookId);
+    if (adjustments == null || adjustments.isEmpty) {
+      debugPrint('No saved visual adjustments for book ${widget.bookId}');
+      return;
+    }
+
+    debugPrint('Applying saved visual adjustments: $adjustments');
+
+    try {
+      final adjustmentsJson = jsonEncode(adjustments);
+      await _webViewController!.evaluateJavascript(
+        source: 'if (typeof applyVisualAdjustments === "function") { applyVisualAdjustments($adjustmentsJson); }',
+      );
+    } catch (e) {
+      debugPrint('Error applying visual adjustments: $e');
+    }
+  }
+
+  /// Save visual adjustments for the current book
+  Future<void> _saveVisualAdjustments(Map<String, dynamic> adjustments) async {
+    if (adjustments.isEmpty) return;
+
+    debugPrint('Saving visual adjustments for book ${widget.bookId}: $adjustments');
+
+    try {
+      await _visualAdjustmentsService.saveAdjustments(widget.bookId, adjustments);
+    } catch (e) {
+      debugPrint('Error saving visual adjustments: $e');
+    }
   }
 }

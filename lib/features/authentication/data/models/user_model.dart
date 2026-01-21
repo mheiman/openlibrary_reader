@@ -7,7 +7,7 @@ part 'user_model.g.dart';
 
 /// User model with JSON serialization
 @freezed
-class UserModel with _$UserModel {
+abstract class UserModel with _$UserModel {
   const UserModel._();
 
   const factory UserModel({

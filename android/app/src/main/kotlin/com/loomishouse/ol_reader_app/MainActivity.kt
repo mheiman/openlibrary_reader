@@ -1,4 +1,4 @@
-package com.openlibraryreader.ol_reader_clean
+package com.loomishouse.ol_reader_app
 
 import io.flutter.embedding.android.FlutterActivity
 

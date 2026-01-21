@@ -7,7 +7,7 @@ part 'edition_model.g.dart';
 
 /// Edition model with JSON serialization
 @freezed
-class EditionModel with _$EditionModel {
+abstract class EditionModel with _$EditionModel {
   const EditionModel._();
 
   const factory EditionModel({

@@ -6,7 +6,7 @@ part 'author_model.freezed.dart';
 
 /// Author model with JSON serialization
 @freezed
-class AuthorModel with _$AuthorModel {
+abstract class AuthorModel with _$AuthorModel {
   const AuthorModel._();
 
   const factory AuthorModel({

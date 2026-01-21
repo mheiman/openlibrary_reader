@@ -8,7 +8,7 @@ part 'shelf_model.g.dart';
 
 /// Shelf model with JSON serialization
 @freezed
-class ShelfModel with _$ShelfModel {
+abstract class ShelfModel with _$ShelfModel {
   const ShelfModel._();
 
   const factory ShelfModel({

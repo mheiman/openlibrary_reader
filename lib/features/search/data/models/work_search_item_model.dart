@@ -7,7 +7,7 @@ part 'work_search_item_model.g.dart';
 
 /// Model for work search item from OpenLibrary API
 @freezed
-class WorkSearchItemModel with _$WorkSearchItemModel {
+abstract class WorkSearchItemModel with _$WorkSearchItemModel {
   const factory WorkSearchItemModel({
     required String workId,
     required String title,

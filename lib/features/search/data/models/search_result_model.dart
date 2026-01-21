@@ -8,7 +8,7 @@ part 'search_result_model.g.dart';
 
 /// Model for search result from OpenLibrary API
 @freezed
-class SearchResultModel with _$SearchResultModel {
+abstract class SearchResultModel with _$SearchResultModel {
   const factory SearchResultModel({
     required List<WorkSearchItemModel> works,
     required int totalResults,

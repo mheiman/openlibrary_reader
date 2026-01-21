@@ -7,7 +7,7 @@ part 'book_details_model.g.dart';
 
 /// Book details model with JSON serialization
 @freezed
-class BookDetailsModel with _$BookDetailsModel {
+abstract class BookDetailsModel with _$BookDetailsModel {
   const BookDetailsModel._();
 
   const factory BookDetailsModel({

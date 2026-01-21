@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -29,10 +31,18 @@ class AuthorCard extends StatelessWidget {
         return _buildAuthorImage();
       },
       textBuilder: (context) {
+        // Scale text size based on cover width (dampened to prevent extremes)
+        const defaultCoverWidth = 80.0;
+        final scale = math.sqrt(coverWidth / defaultCoverWidth);
+        final labelFontSize = 11.0 * scale;
+        final nameFontSize = 12.0 * scale;
+        final verticalSpacing = 6.0 * scale;
+        final smallSpacing = 2.0 * scale;
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            const SizedBox(height: 6),
+            SizedBox(height: verticalSpacing),
 
             // "Author" label (where book shows author name)
             Text(
@@ -41,13 +51,13 @@ class AuthorCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
-                    fontSize: 11,
+                    fontSize: labelFontSize,
                     height: 1.2,
                   ),
               textAlign: TextAlign.center,
             ),
 
-            const SizedBox(height: 2),
+            SizedBox(height: smallSpacing),
 
             // Author name (where book shows title)
             Text(
@@ -57,7 +67,7 @@ class AuthorCard extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[300],
                     fontWeight: FontWeight.w500,
-                    fontSize: 12,
+                    fontSize: nameFontSize,
                     height: 1.2,
                   ),
               textAlign: TextAlign.center,

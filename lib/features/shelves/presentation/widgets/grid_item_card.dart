@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'book_grid_config.dart';
+
 /// Centralized grid item card widget that provides consistent layout
 /// for books, authors, and other grid items.
 ///
 /// This widget ensures all grid items have:
 /// - Bottom-aligned images (using Alignment.bottomCenter)
 /// - Consistent aspect ratios and sizing
-/// - Fixed 72px text area at bottom
+/// - Scaled text area at bottom (based on cover width)
 /// - Optional overlay widgets (menu buttons, badges, etc.)
 class GridItemCard extends StatelessWidget {
   final double coverWidth;
@@ -68,9 +70,9 @@ class GridItemCard extends StatelessWidget {
               ),
             ),
 
-            // Text area with fixed height to prevent overflow
+            // Text area with scaled height to match text scaling
             SizedBox(
-              height: 72,
+              height: BookGridConfig.calculateTextAreaHeight(coverWidth),
               child: SingleChildScrollView(
                 child: textBuilder(context),
               ),

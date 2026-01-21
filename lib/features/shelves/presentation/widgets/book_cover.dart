@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -107,10 +108,19 @@ class _BookCoverState extends State<BookCover> {
         ),
       ],
       textBuilder: (context) {
+        // Scale text size based on cover width (dampened to prevent extremes)
+        // Using sqrt for a gentler scaling curve
+        const defaultCoverWidth = 80.0;
+        final scale = math.sqrt(widget.coverWidth / defaultCoverWidth);
+        final authorFontSize = 11.0 * scale;
+        final titleFontSize = 12.0 * scale;
+        final verticalSpacing = 6.0 * scale;
+        final smallSpacing = 2.0 * scale;
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            const SizedBox(height: 6),
+            SizedBox(height: verticalSpacing),
 
             // Author (above title, abbreviate from left to preserve last name)
             if (widget.book.authors.isNotEmpty) ...[
@@ -119,7 +129,7 @@ class _BookCoverState extends State<BookCover> {
                   final style =
                       Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
-                            fontSize: 11,
+                            fontSize: authorFontSize,
                             height: 1.2,
                           );
 
@@ -166,7 +176,7 @@ class _BookCoverState extends State<BookCover> {
                   );
                 },
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: smallSpacing),
             ],
 
             // Book title
@@ -177,7 +187,7 @@ class _BookCoverState extends State<BookCover> {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[300],
                     fontWeight: FontWeight.w500,
-                    fontSize: 12,
+                    fontSize: titleFontSize,
                     height: 1.2,
                   ),
               textAlign: TextAlign.center,

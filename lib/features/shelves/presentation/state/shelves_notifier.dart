@@ -220,7 +220,10 @@ class ShelvesNotifier extends ChangeNotifier {
     // Use progressive loading for better UX when we don't have loaded shelves yet
     // This covers first login, force refresh, and any case where shelves aren't cached
     if (_state is! ShelvesLoaded) {
-      await _loadShelvesProgressively(shouldFetchLists);
+      await _loadShelvesProgressively(
+        shouldFetchLists: shouldFetchLists,
+        forceRefresh: forceRefresh,
+      );
       return;
     }
 
@@ -337,7 +340,10 @@ class ShelvesNotifier extends ChangeNotifier {
   }
 
   /// Load shelves progressively - emit state after each shelf loads
-  Future<void> _loadShelvesProgressively(bool shouldFetchLists) async {
+  Future<void> _loadShelvesProgressively({
+    required bool shouldFetchLists,
+    required bool forceRefresh,
+  }) async {
     // Double-check auth state before progressive loading
     final authState = authNotifier.state;
     if (authState is Unauthenticated) {
@@ -366,7 +372,7 @@ class ShelvesNotifier extends ChangeNotifier {
         try {
           final shelfResult = await repository.getShelf(
             shelfKey: shelfKey,
-            forceRefresh: true,
+            forceRefresh: forceRefresh,
           );
 
           if (shelfResult.isRight()) {
@@ -869,9 +875,6 @@ class ShelvesNotifier extends ChangeNotifier {
       loadShelves(),
       refreshUserLoans(),
     ]);
-
-    // Process any redirect candidates in the background
-    _processRedirectCandidates();
 
     // Cleanup orphaned visual adjustments in the background
     _cleanupOrphanedVisualAdjustments();

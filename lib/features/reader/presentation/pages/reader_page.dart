@@ -11,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/navigation_extensions.dart';
 import '../../../../core/services/visual_adjustments_service.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/datasources/auth_remote_data_source.dart';
 import '../../../settings/presentation/state/settings_notifier.dart';
 import '../../../settings/presentation/state/settings_state.dart';
@@ -166,7 +167,18 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text('Still reading ${widget.title ?? 'this book'}?'),
+        title: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: 'Still reading '),
+              TextSpan(
+                text: widget.title ?? 'this book',
+                style: AppTheme.italic,
+              ),
+              TextSpan(text: '?'),
+            ],
+          ),
+        ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           OutlinedButton(

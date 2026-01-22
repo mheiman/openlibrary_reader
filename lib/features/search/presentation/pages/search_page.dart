@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
@@ -130,21 +131,36 @@ class _SearchPageState extends State<SearchPage> {
 
       // Update book list if loaded
       if (state is SearchLoaded) {
-        // Get all work IDs that are already on shelves
+        // Get all books on shelves, mapped by work ID
         final shelvesState = _shelvesNotifier.state;
-        final existingWorkIds = <String>{};
+        final shelfBooksByWorkId = <String, Book>{};
+        final shelfKeyByWorkId = <String, String>{};
 
         if (shelvesState is ShelvesLoaded) {
           for (final shelf in shelvesState.shelves) {
             for (final book in shelf.books) {
-              existingWorkIds.add(book.workId);
+              shelfBooksByWorkId[book.workId] = book;
+              shelfKeyByWorkId[book.workId] = shelf.key;
             }
           }
         }
 
-        // Filter out works that are already on shelves and sort
+        // Find works from remote results that are already on shelves
+        // and add them to local results if not already present
+        final localWorkIds = _localResults.map((b) => b.workId).toSet();
+        for (final work in state.result.works) {
+          if (shelfBooksByWorkId.containsKey(work.workId) &&
+              !localWorkIds.contains(work.workId)) {
+            _localResults.add(shelfBooksByWorkId[work.workId]!);
+            _bookShelfMap[work.workId] = shelfKeyByWorkId[work.workId]!;
+            localWorkIds.add(work.workId);
+          }
+        }
+        _localResults = _sortBooks(_localResults);
+
+        // Filter out works that are already on shelves from remote results
         final books = state.result.works
-            .where((work) => !existingWorkIds.contains(work.workId))
+            .where((work) => !shelfBooksByWorkId.containsKey(work.workId))
             .map((work) {
               return Book(
                 editionId: work.lendingEdition ?? '',
@@ -519,6 +535,117 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
+  /// Handle clipboard search for Open Library or Internet Archive URLs
+  Future<void> _handleClipboardSearch() async {
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
+
+    final text = clipboardData?.text?.trim();
+
+    if (text == null || text.isEmpty) {
+      _showClipboardError('Copy an Open Library or Internet Archive book URL '
+          'in your browser to search for it here.');
+      return;
+    }
+
+    final uri = Uri.tryParse(text);
+    if (uri == null) {
+      _showClipboardError('Copy an Open Library or Internet Archive book URL '
+          'in your browser to search for it here.');
+      return;
+    }
+
+    final host = uri.host.toLowerCase();
+
+    // Check for Open Library URLs
+    if (host == 'openlibrary.org' || host == 'www.openlibrary.org') {
+      final searchTerm = _parseOpenLibraryUrl(uri);
+      if (searchTerm != null) {
+        _setSearchFromClipboard(searchTerm);
+      } else {
+        _showClipboardError('No book identifiers found in URL.');
+      }
+      return;
+    }
+
+    // Check for Internet Archive URLs
+    if (host == 'archive.org' || host == 'www.archive.org') {
+      final searchTerm = _parseArchiveOrgUrl(uri);
+      if (searchTerm != null) {
+        _setSearchFromClipboard(searchTerm);
+      } else {
+        _showClipboardError('No book identifiers found in URL.');
+      }
+      return;
+    }
+
+    // Not a recognized URL
+    _showClipboardError('Copy an Open Library or Internet Archive book URL '
+        'in your browser to search for it here.');
+  }
+
+  /// Parse Open Library URL for book/work identifiers
+  /// Returns search term like "key:/works/OL123W" or "edition_key:/books/OL456M"
+  String? _parseOpenLibraryUrl(Uri uri) {
+    final path = uri.path;
+
+    // Look for /books/OL...M pattern (edition) - this takes priority
+    final booksMatch = RegExp(r'/books/(OL\d+M)').firstMatch(path);
+    if (booksMatch != null) {
+      return 'edition_key:${booksMatch.group(1)}';
+    }
+
+    // Look for /works/OL...W pattern
+    final worksMatch = RegExp(r'/works/(OL\d+W)').firstMatch(path);
+    if (worksMatch != null) {
+      return 'key:/works/${worksMatch.group(1)}';
+    }
+
+    return null;
+  }
+
+  /// Parse Archive.org URL for identifier
+  /// Returns search term like "ia:identifier"
+  String? _parseArchiveOrgUrl(Uri uri) {
+    final path = uri.path;
+
+    // Look for /details/IDENTIFIER pattern
+    final detailsMatch = RegExp(r'/details/([^/?]+)').firstMatch(path);
+    if (detailsMatch != null) {
+      return 'ia:${detailsMatch.group(1)}';
+    }
+
+    return null;
+  }
+
+  /// Set search field from clipboard result and trigger search
+  void _setSearchFromClipboard(String searchTerm) {
+    setState(() {
+      _searchFilter = SearchFilter.all;
+      _searchController.text = searchTerm;
+    });
+    _performOpenLibrarySearch();
+  }
+
+  /// Show clipboard error dialog
+  void _showClipboardError(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clipboard'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -538,6 +665,11 @@ class _SearchPageState extends State<SearchPage> {
         title: const Text('Search'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.content_paste),
+            onPressed: _handleClipboardSearch,
+            tooltip: 'Search from clipboard URL',
+          ),
           IconButton(
             icon: const Icon(Icons.sort),
             onPressed: _showSortDialog,

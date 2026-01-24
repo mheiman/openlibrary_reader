@@ -57,10 +57,6 @@ class AuthRemoteDataSource {
         if (cookies != null && cookies.isNotEmpty) {
           await _setCookieHeader(cookies.join('; '));
         }
-
-        // Verify login by checking if we're logged in
-        // TODO: Re-enable proper login verification
-        // final isLoggedIn = await _verifyLogin();
         
         // Store credentials for auto-login
         await secureStorage.write('username', username);

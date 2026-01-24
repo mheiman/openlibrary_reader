@@ -107,18 +107,6 @@ function toggleNav(source) {
     $("#BookReader").toggleClass("readerFullScreen");
 }
 
-function setVisualAdjustments(optionString, depth=0) {
-    if (depth > 5) return;
-    const bookNavigator = $("ia-book-theater")[0].shadowRoot.firstElementChild.shadowRoot.firstElementChild.firstElementChild.getElementsByTagName('book-navigator')[0];
-    if (!bookNavigator.menuProviders['visualAdjustments'])
-        setTimeout(function() {setVisualAdjustments(optionString, depth + 1)}, 1000);
-    else {
-        bookNavigator.menuProviders['visualAdjustments'].component.values[0] = optionString['detail']['options'];
-        bookNavigator.menuProviders['visualAdjustments'].activeCount = optionString['detail']['activeCount'];
-        bookNavigator.menuProviders['visualAdjustments'].onAdjustmentChange({detail: optionString['detail']});
-    }
-}
-
 // Apply saved visual adjustments from Dart
 function applyVisualAdjustments(adjustments, depth=0) {
     if (depth > 10) {

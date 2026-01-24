@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/navigation_extensions.dart';
+import '../../../../core/widgets/dialog_header.dart';
 import '../../../settings/domain/entities/app_settings.dart';
 import '../../../settings/domain/usecases/update_settings.dart';
 import '../../../settings/presentation/state/settings_notifier.dart';
@@ -537,7 +538,14 @@ class _SearchPageState extends State<SearchPage> {
 
   /// Handle clipboard search for Open Library or Internet Archive URLs
   Future<void> _handleClipboardSearch() async {
+    // Unfocus search field to prevent focus-related rebuilds
+    _searchFocusNode.unfocus();
+
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
+
+    // Small delay to let any system UI (clipboard notifications) settle
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     if (!mounted) return;
 
     final text = clipboardData?.text?.trim();
@@ -633,15 +641,21 @@ class _SearchPageState extends State<SearchPage> {
     showDialog(
       context: context,
       useRootNavigator: true,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Clipboard'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('OK'),
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const DialogHeader(title: 'Clipboard'),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(message),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

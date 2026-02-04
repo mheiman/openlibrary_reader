@@ -497,6 +497,7 @@ class _SearchPageState extends State<SearchPage> {
   void _showSortDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => SearchSortDialog(
         currentSortOrder: _getCurrentSortOrder(),
         currentAscending: _getCurrentSortAscending(),

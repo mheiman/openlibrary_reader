@@ -15,6 +15,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/datasources/auth_remote_data_source.dart';
 import '../../../settings/presentation/state/settings_notifier.dart';
 import '../../../settings/presentation/state/settings_state.dart';
+import '../../../shelves/domain/entities/book.dart';
+import '../../../shelves/presentation/widgets/shelf_menu_button.dart';
 import '../state/reader_notifier.dart';
 import '../state/reader_state.dart';
 
@@ -117,8 +119,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     debugPrint('Reader lifecycle state: $state');
 
     if (state == AppLifecycleState.resumed) {
-      // App is visible and running - check if loan token is still valid
-      _checkLoanValidity();
+      // App is visible and running - first check if WebView is still alive
+      _checkWebViewHealthAndRecover();
 
       // Restore fullscreen mode if needed
       if (_fullScreen) {
@@ -130,6 +132,38 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           );
         }
       }
+    }
+  }
+
+  /// Check if WebView is responsive, and recover if it's dead
+  Future<void> _checkWebViewHealthAndRecover() async {
+    if (_webViewController == null || !mounted) return;
+
+    try {
+      // Try a simple JavaScript evaluation with a timeout
+      final result = await _webViewController!
+          .evaluateJavascript(source: '1+1')
+          .timeout(const Duration(seconds: 3));
+
+      debugPrint('WebView health check result: $result');
+
+      if (result == null) {
+        // WebView is unresponsive - reload
+        debugPrint('WebView health check failed (null result) - reloading');
+        await _reloadReader();
+        return;
+      }
+
+      // WebView is alive - proceed with loan validity check
+      _checkLoanValidity();
+    } on TimeoutException {
+      // WebView is unresponsive - reload
+      debugPrint('WebView health check timed out - reloading');
+      await _reloadReader();
+    } catch (e) {
+      // WebView may be dead - try to reload
+      debugPrint('WebView health check error: $e - reloading');
+      await _reloadReader();
     }
   }
 
@@ -292,6 +326,17 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                 style: TextStyle(color: Theme.of(context).colorScheme.onPrimary,),
               ),
               actions: [
+                ShelfMenuButton(
+                  book: Book(
+                    editionId: widget.coverEditionId ?? '',
+                    workId: widget.workId ?? '',
+                    title: widget.title ?? '',
+                    coverImageId: widget.coverImageId,
+                    coverEditionId: widget.coverEditionId,
+                    iaId: widget.bookId,
+                  ),
+                  iconColor: Theme.of(context).colorScheme.onPrimary,
+                ),
                 IconButton(
                   icon: const Icon(Icons.autorenew_rounded),
                   color: Theme.of(context).colorScheme.onPrimary,
@@ -503,6 +548,12 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
               });
             }
             return null;
+          },
+          onWebContentProcessDidTerminate: (controller) async {
+            // iOS terminated the WebView content process (usually due to memory pressure)
+            // This typically happens after extended background periods
+            debugPrint('WebView content process terminated by iOS - reloading');
+            await _reloadReader();
           },
         ),
         if (_isLoading)

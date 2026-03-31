@@ -530,7 +530,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
 
             if ((url.contains('openlibrary.org') &&
                     url.contains('/details/')) ||
-                url.contains('/account/loans')) {
+                url.contains('/account/loans') ||
+                (url.contains('archive.org/details/') &&
+                    !url.contains('view=theater') &&
+                    !url.contains('/mode/'))) {
               context.goBack();
               return NavigationActionPolicy.CANCEL;
             }

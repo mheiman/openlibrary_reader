@@ -84,23 +84,38 @@ function attachLeafEdgeHandler() {
     }, 2000);
 }
 
+function getTheaterNavElements() {
+    // ia-book-theater → ia-bookreader → iaux-item-navigator (shadow DOM chain)
+    const theater = $("ia-book-theater")[0];
+    if (!theater?.shadowRoot) return null;
+    const iaBookreader = theater.shadowRoot.firstElementChild; // ia-bookreader
+    if (!iaBookreader?.shadowRoot) return null;
+    const itemNav = iaBookreader.shadowRoot.firstElementChild; // iaux-item-navigator
+    if (!itemNav?.shadowRoot) return null;
+    return {
+        nav: itemNav.shadowRoot.querySelector('nav'),
+        header: itemNav.shadowRoot.querySelector('slot[name="header"]'),
+    };
+}
+
 function toggleNav(source) {
     console.log('toggleNav(' + source + ')');
+    const els = getTheaterNavElements();
     if ($("#BookReader").hasClass("readerFullScreen")) {
      OLReader.postMessage(JSON.stringify({type: 'ShowingNav'}));
      //tools
-     $($("ia-book-theater")[0].shadowRoot.firstElementChild.shadowRoot.firstElementChild.firstElementChild.shadowRoot.firstElementChild.getElementsByTagName('nav')[0]).show();
+     if (els?.nav) $(els.nav).show();
      //header
-     $($("ia-book-theater")[0].shadowRoot.firstElementChild.shadowRoot.firstElementChild.firstElementChild.shadowRoot.firstElementChild.firstElementChild).show();
+     if (els?.header) $(els.header).show();
      //footer
      if ($("div.BRfooter").is(":hidden")) $("div.BRfooter").fadeToggle("slow");
     } else {
      OLReader.postMessage(JSON.stringify({type: 'HidingNav'}));
      br.onePage.autofit = 'height';
      //tools
-     $($("ia-book-theater")[0].shadowRoot.firstElementChild.shadowRoot.firstElementChild.firstElementChild.shadowRoot.firstElementChild.getElementsByTagName('nav')[0]).hide();
+     if (els?.nav) $(els.nav).hide();
      //header
-     $($("ia-book-theater")[0].shadowRoot.firstElementChild.shadowRoot.firstElementChild.firstElementChild.shadowRoot.firstElementChild.firstElementChild).hide();
+     if (els?.header) $(els.header).hide();
      //footer
      if ($("div.BRfooter").is(":visible")) $("div.BRfooter").fadeToggle("slow");
     }
@@ -119,13 +134,13 @@ function applyVisualAdjustments(adjustments, depth=0) {
             setTimeout(function() { applyVisualAdjustments(adjustments, depth + 1); }, 500);
             return;
         }
-        const bookNavigator = theater.shadowRoot.firstElementChild.shadowRoot.firstElementChild.firstElementChild.getElementsByTagName('book-navigator')[0];
-        if (!bookNavigator || !bookNavigator.menuProviders || !bookNavigator.menuProviders['visualAdjustments']) {
+        const iaBookreader = theater.shadowRoot.firstElementChild; // ia-bookreader
+        if (!iaBookreader || !iaBookreader.menuProviders || !iaBookreader.menuProviders['visualAdjustments']) {
             setTimeout(function() { applyVisualAdjustments(adjustments, depth + 1); }, 500);
             return;
         }
 
-        const vaProvider = bookNavigator.menuProviders['visualAdjustments'];
+        const vaProvider = iaBookreader.menuProviders['visualAdjustments'];
         if (adjustments.options) {
             vaProvider.component.values[0] = adjustments.options;
         }
